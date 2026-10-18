@@ -23,6 +23,26 @@
   root.appendChild(toggle);
   document.body.appendChild(root);
 
+  function placeQA() {
+    var room = document.querySelector('.room');
+    if (!room) return;
+    var box = room.getBoundingClientRect();
+    var width = toggle.getBoundingClientRect().width || 76;
+    var height = toggle.getBoundingClientRect().height || 36;
+    var top = box.top + 8;
+    var left = box.right - width - 8;
+    if (top + height > box.bottom - 8) top = Math.max(8, box.bottom - height - 8);
+    if (left < 8) left = 8;
+    root.style.top = Math.round(top) + 'px';
+    root.style.left = Math.round(left) + 'px';
+    root.style.right = 'auto';
+    root.style.bottom = 'auto';
+  }
+
+  placeQA();
+  window.addEventListener('resize', placeQA);
+  requestAnimationFrame(placeQA);
+
   var logNode = panel.querySelector('#qa-log');
   var statusNode = panel.querySelector('#qa-status');
   var botTimer = 0;
