@@ -355,7 +355,7 @@ body.is-paused .app * {
   top: 8px;
   right: auto;
   bottom: auto;
-  max-width: 72%;
+  max-width: min(92%, 340px);
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -378,13 +378,15 @@ body.is-paused .app * {
 
 .room-next {
   margin: 0;
-  max-width: 220px;
+  max-width: 100%;
   font-size: 11px;
   line-height: 1.25;
   color: var(--gold-2);
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
 }
 
 .room-blurb { display: none; }
@@ -2174,6 +2176,7 @@ body.is-paused .app * {
   }
   #inspire-label { font-size: 10px; white-space: nowrap; }
   .offer-btn { min-height: 30px; }
+  .qa-root { bottom: 64px; right: 8px; }
   .merge { flex: 1 1 auto; min-height: 0; }
   .order-card { padding: 2px 4px; gap: 1px; }
   .order-card p.order-why { -webkit-line-clamp: 1; font-size: 10px; }

@@ -250,7 +250,7 @@
       needs: [a, b],
       money: orderPayout(source, [a, b]),
       crystals: Math.max(1, Math.round((a + b) / 3)),
-      prestige: (6 + a + b) / 100,
+      prestige: orderPrestige([a, b]),
       missSince: 0
     };
   }
@@ -528,6 +528,11 @@
   function rentMultiplier() {
     var fever = state.feverLeftMs > 0 ? 3 : 1;
     return (1 + 0.25 * state.upgrades.rent) * (1 + (state.prestige || 0)) * (state.boostLeftMs > 0 ? 2 : 1) * fever;
+  }
+
+  function orderPrestige(needs) {
+    var pieces = itemIncome(needs[0]) + itemIncome(needs[1]);
+    return Math.min(0.08, Math.max(0.01, pieces / 5000));
   }
 
   function orderPayout(source, needs) {
@@ -1250,7 +1255,7 @@
     spots.forEach(function (cellIndex) { state.grid[cellIndex] = 0; });
     state.money = Math.min(MAX_MONEY, state.money + order.money);
     state.crystals = Math.min(MAX_CRYSTALS, state.crystals + order.crystals);
-    state.prestige = Math.min(50, state.prestige + order.prestige);
+    state.prestige = Math.min(50, state.prestige + orderPrestige(order.needs));
     audio.playCoin();
     audio.playUpgrade();
     var point = card.getBoundingClientRect();
@@ -1377,7 +1382,7 @@
       prize.textContent = i18n.t('design.reward', {
         money: formatCompact(money),
         crystals: String(order.crystals),
-        pct: String(Math.round(order.prestige * 100))
+        pct: String(Math.round(orderPrestige(order.needs) * 100))
       });
       button.appendChild(verb);
       button.appendChild(prize);

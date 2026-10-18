@@ -198,7 +198,7 @@
         wait: 'Секунду, игра ещё просыпается'
       },
       contract: {
-        discover: 'Дальше, {room}: откройте «{item}»',
+        discover: 'Откройте «{item}» — дальше {room}',
         deliver: 'Пентхаус: сдайте заказы {have}/{need}',
         opened: 'Открыта «{room}»',
         kept: 'Контракт закрыт. На столе уже следующий',
@@ -712,7 +712,7 @@
         wait: 'One moment, the game is still waking'
       },
       contract: {
-        discover: 'Next, {room}: discover “{item}”',
+        discover: 'Discover “{item}” — next is {room}',
         deliver: 'Penthouse: deliver orders {have}/{need}',
         opened: '“{room}” is open',
         kept: 'Contract closed. The next one is already on the desk',
