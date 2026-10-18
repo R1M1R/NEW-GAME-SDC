@@ -1608,7 +1608,7 @@ body.is-paused .app * {
 .order-card p {
   font-size: 12px;
   line-height: 1.3;
-  color: var(--cream);
+  white-space: normal;
 }
 
 .order-wait {
@@ -1953,8 +1953,35 @@ body.is-paused .app * {
 }
 
 .room-caption { z-index: 8; }
-.zone-layer { overflow: hidden; }
-.zone-pin { max-width: 30%; }
+.zone-layer {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  top: auto;
+  z-index: 6;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  height: auto;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.zone-pin,
+.zone-pin[data-zone="window"],
+.zone-pin[data-zone="light"],
+.zone-pin[data-zone="soft"],
+.zone-pin[data-zone="tech"],
+.zone-pin[data-zone="floor"] {
+  position: static;
+  left: auto;
+  right: auto;
+  top: auto;
+  bottom: auto;
+  max-width: none;
+  pointer-events: auto;
+}
 
 @media (max-width: 799px) {
   .app {

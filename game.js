@@ -158,11 +158,39 @@
     return Math.max(1, Math.min(12, spawn));
   }
 
-  function rollOrder(source, exclude) {
-    var peak = playablePeak(source);
-    var low = Math.max(1, peak - 1);
-    var a = Math.random() < 0.5 ? low : peak;
-    var b = Math.random() < 0.7 ? peak : low;
+  function piecesOn(source) {
+    var bag = [];
+    var grid = source.grid || [];
+    for (var i = 0; i < grid.length; i += 1) {
+      if (grid[i] && grid[i] < 15) bag.push(grid[i]);
+    }
+    return bag;
+  }
+
+  function rollOrder(source, exclude, reserved) {
+    var bag = piecesOn(source);
+    if (reserved && reserved.length) {
+      var copy = bag.slice();
+      for (var r = 0; r < reserved.length; r += 1) {
+        var at = copy.indexOf(reserved[r]);
+        if (at >= 0) copy.splice(at, 1);
+      }
+      if (copy.length >= 2) bag = copy;
+      else bag = [];
+    }
+    var a;
+    var b;
+    if (bag.length >= 2) {
+      var first = Math.floor(Math.random() * bag.length);
+      var second = Math.floor(Math.random() * (bag.length - 1));
+      if (second >= first) second += 1;
+      a = bag[first];
+      b = bag[second];
+    } else {
+      var peak = playablePeak(source);
+      a = peak;
+      b = Math.max(1, peak - 1);
+    }
     if (a > b) {
       var swap = a;
       a = b;
@@ -187,18 +215,24 @@
 
   function refreshStaleOrders() {
     if (!state.orders) return;
-    var floor = Math.max(1, playablePeak(state) - 2);
+    if (piecesOn(state).length < 2) return;
+    var reserved = [];
     var changed = false;
     for (var i = 0; i < state.orders.length; i += 1) {
       var order = state.orders[i];
-      if (!order) continue;
-      if (order.needs[0] >= floor || order.needs[1] >= floor) continue;
-      if (claimMap()[order.uid]) continue;
+      if (order && claimMap()[order.uid]) {
+        reserved = reserved.concat(order.needs);
+        continue;
+      }
       var exclude = [];
       for (var n = 0; n < state.orders.length; n += 1) {
-        if (n !== i) exclude.push(state.orders[n].client);
+        if (n !== i && state.orders[n]) exclude.push(state.orders[n].client);
       }
-      state.orders[i] = rollOrder(state, exclude);
+      var next = rollOrder(state, exclude, reserved);
+      var blocked = reserved.length && piecesOn(state).length - reserved.length < 2 && next.needs[0] < playablePeak(state) - 1;
+      if (order && blocked) continue;
+      state.orders[i] = next;
+      reserved = reserved.concat(next.needs);
       changed = true;
     }
     if (changed) ordersSig = '';
@@ -1052,6 +1086,22 @@
     save();
   }
 
+  function stockLine(order) {
+    var used = {};
+    var have = 0;
+    for (var n = 0; n < order.needs.length; n += 1) {
+      for (var i = 0; i < state.grid.length; i += 1) {
+        if (used[i]) continue;
+        if (state.grid[i] === order.needs[n]) {
+          used[i] = true;
+          have += 1;
+          break;
+        }
+      }
+    }
+    return i18n.t('design.stock', { have: String(have), need: String(order.needs.length) });
+  }
+
   function renderOrders() {
     if (!nodes.ordersList) return;
     if (nodes.ordersKicker) nodes.ordersKicker.textContent = labelOr('design.orders', i18n.lang === 'en' ? 'Orders' : 'Заказы');
@@ -1081,10 +1131,19 @@
       top.appendChild(heading);
       top.appendChild(role);
       var need = document.createElement('p');
-      need.textContent = i18n.t('design.need', { a: String(order.needs[0]), b: String(order.needs[1]) });
+      need.textContent = i18n.t('design.ask', {
+        a: i18n.t('items.' + order.needs[0] + '.name'),
+        b: i18n.t('items.' + order.needs[1] + '.name')
+      });
       card.appendChild(top);
       card.appendChild(need);
-      if (ready) {
+      var owned = stockLine(order);
+      if (!ready) {
+        var wait = document.createElement('span');
+        wait.className = 'order-wait';
+        wait.textContent = owned;
+        card.appendChild(wait);
+      } else {
         var button = document.createElement('button');
         button.type = 'button';
         button.className = 'order-submit';
@@ -1100,11 +1159,6 @@
         button.appendChild(prize);
         button.addEventListener('click', function () { deliverOrder(order.uid, card); });
         card.appendChild(button);
-      } else {
-        var wait = document.createElement('span');
-        wait.className = 'order-wait';
-        wait.textContent = i18n.t('design.waiting');
-        card.appendChild(wait);
       }
       nodes.ordersList.appendChild(card);
     });
