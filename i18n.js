@@ -197,6 +197,13 @@
         bought: 'Куплено: {name}',
         wait: 'Секунду, игра ещё просыпается'
       },
+      contract: {
+        discover: 'Дальше, {room}: откройте «{item}»',
+        deliver: 'Пентхаус: сдайте заказы {have}/{need}',
+        opened: 'Открыта «{room}»',
+        kept: 'Контракт закрыт. На столе уже следующий',
+        step: '«{item}» в коллекции. Квартира растёт'
+      },
       rooms: {
         0: {
           name: 'Черновая студия',
@@ -703,6 +710,13 @@
         quest: 'Quest closed: {title}',
         bought: 'Bought: {name}',
         wait: 'One moment, the game is still waking'
+      },
+      contract: {
+        discover: 'Next, {room}: discover “{item}”',
+        deliver: 'Penthouse: deliver orders {have}/{need}',
+        opened: '“{room}” is open',
+        kept: 'Contract closed. The next one is already on the desk',
+        step: '“{item}” is in the collection. The flat grows'
       },
       rooms: {
         0: {

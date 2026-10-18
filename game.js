@@ -350,6 +350,7 @@
       eventIn: 48
     };
     seedOrders(next);
+    next.contract = makeContract(next);
     return next;
   }
 
@@ -443,6 +444,13 @@
         next.orders.push(made);
       }
     }
+    if (raw.contract && (raw.contract.kind === 'discover' || raw.contract.kind === 'deliver')) {
+      next.contract = {
+        kind: raw.contract.kind,
+        target: Math.floor(clamp(raw.contract.target, 1, raw.contract.kind === 'discover' ? 15 : 12)),
+        progress: Math.floor(clamp(raw.contract.progress || 0, 0, 12))
+      };
+    }
     next.event = null;
     if (raw.event && (raw.event.kind === 'sale' || raw.event.kind === 'surge')) {
       var left = clamp(raw.event.left, 0, 15);
@@ -455,6 +463,53 @@
       }
     }
     return next;
+  }
+
+  function makeContract(source) {
+    var max = discoveredMaxOf(source);
+    var rent = source.upgrades ? source.upgrades.rent || 0 : 0;
+    var tier = art.visualTier(max, rent);
+    if (tier >= 6 || max >= 15) return { kind: 'deliver', target: 3, progress: 0 };
+    return { kind: 'discover', target: Math.min(15, max + 1), progress: 0 };
+  }
+
+  function finishContract() {
+    var before = art.visualTier(discoveredMax(), state.upgrades.rent);
+    var finished = state.contract;
+    state.contract = makeContract(state);
+    var after = art.visualTier(discoveredMax(), state.upgrades.rent);
+    if (juice) juice.shake(10);
+    if (after > before) {
+      toast(i18n.t('contract.opened', { room: i18n.t('rooms.' + after + '.name') }));
+      return;
+    }
+    if (finished && finished.kind === 'deliver') {
+      state.crystals = Math.min(MAX_CRYSTALS, state.crystals + 4);
+      toast(i18n.t('contract.kept'));
+      return;
+    }
+    toast(i18n.t('contract.step', { item: i18n.t('items.' + finished.target + '.name') }));
+  }
+
+  function settleContract() {
+    if (!state.contract || !state.contract.kind) state.contract = makeContract(state);
+    var job = state.contract;
+    var done = job.kind === 'discover' ? discoveredMax() >= job.target : job.progress >= job.target;
+    if (!done) return;
+    finishContract();
+  }
+
+  function contractLine() {
+    settleContract();
+    var job = state.contract;
+    if (job.kind === 'deliver') {
+      return i18n.t('contract.deliver', { have: String(job.progress), need: String(job.target) });
+    }
+    var tier = art.visualTier(discoveredMax(), state.upgrades.rent);
+    return i18n.t('contract.discover', {
+      room: i18n.t('rooms.' + Math.min(6, tier + 1) + '.name'),
+      item: i18n.t('items.' + job.target + '.name')
+    });
   }
 
   function discoveredMaxOf(source) {
@@ -712,6 +767,7 @@
     var reward = level * 2;
     state.crystals = Math.min(MAX_CRYSTALS, state.crystals + reward);
     if (state.quest.type === 'discover' && level >= state.quest.target) state.quest.progress = 1;
+    settleContract();
     audio.playNewLevelUnlock();
     toast(i18n.t('play.discovered', { name: i18n.t('items.' + level + '.name') }));
     if (!juice) return;
@@ -981,6 +1037,7 @@
     var tier = art.visualTier(discoveredMax(), state.upgrades.rent);
     nodes.roomName.textContent = i18n.t('rooms.' + tier + '.name');
     nodes.roomBlurb.textContent = i18n.t('rooms.' + tier + '.blurb');
+    if (nodes.roomNext) nodes.roomNext.textContent = contractLine();
     considerStage(tier);
   }
 
@@ -1188,6 +1245,7 @@
     order.money = orderPayout(state, order.needs);
     var spots = claimMap()[order.uid];
     if (!spots) return;
+    if (state.contract && state.contract.kind === 'deliver') state.contract.progress += 1;
     spots.forEach(function (cellIndex) { flyOrderPiece(cellIndex, card); });
     spots.forEach(function (cellIndex) { state.grid[cellIndex] = 0; });
     state.money = Math.min(MAX_MONEY, state.money + order.money);
@@ -2300,6 +2358,7 @@
       claim: $('quest-claim'),
       room: $('room-canvas'),
       roomName: $('room-name'),
+      roomNext: $('room-next'),
       roomBlurb: $('room-blurb'),
       roomSection: document.querySelector('.room'),
       grid: $('merge-grid'),

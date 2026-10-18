@@ -355,12 +355,12 @@ body.is-paused .app * {
   top: 8px;
   right: auto;
   bottom: auto;
-  max-width: 46%;
+  max-width: 72%;
   display: flex;
   flex-direction: column;
   gap: 0;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: 14px;
   background: rgba(16, 12, 9, 0.4);
   border: 1px solid rgba(246, 239, 228, 0.16);
   backdrop-filter: blur(6px);
@@ -371,6 +371,17 @@ body.is-paused .app * {
   font-family: var(--display);
   font-size: 12px;
   letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.room-next {
+  margin: 0;
+  max-width: 220px;
+  font-size: 11px;
+  line-height: 1.25;
+  color: var(--gold-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
