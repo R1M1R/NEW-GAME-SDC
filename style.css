@@ -2231,7 +2231,8 @@ body.is-paused .app * {
   .order-card { padding: 2px 4px; gap: 1px; }
   .order-card p.order-why { -webkit-line-clamp: 1; font-size: 10px; }
   .order-need-name { display: none; }
-  .order-need { padding: 1px 3px 1px 1px; }
+  .order-need { padding: 1px 2px 1px 1px; }
+  .order-need-mark { display: none; }
   .order-need canvas { width: 18px; height: 18px; }
   .order-row { align-items: center; }
   .order-submit {
@@ -2252,6 +2253,8 @@ body.is-paused .app * {
     text-align: center;
     font-size: 12px;
     font-weight: 800;
+    overflow: visible;
+    text-overflow: clip;
   }
   .cell-level {
     left: 2px;
