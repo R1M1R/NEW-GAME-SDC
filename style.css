@@ -2139,14 +2139,42 @@ body.is-paused .app * {
 }
 
 @media (max-width: 799px) {
+  .app { gap: 3px; justify-content: flex-start; }
+  .brand-mark { width: 28px; height: 28px; }
+  .brand-title { font-size: 16px; }
+  .brand-block { min-height: 0; }
   .room {
-    flex: 0 0 18dvh;
-    height: 18dvh;
-    max-height: 18dvh;
+    flex: 0 0 16dvh;
+    height: 16dvh;
+    max-height: 16dvh;
   }
-  .orders { max-height: 64px; overflow: hidden; padding: 4px; gap: 2px; }
+  .orders { max-height: 58px; overflow: hidden; padding: 4px; gap: 2px; }
   .orders-head { display: none; }
-  .quest { padding: 4px 8px; gap: 3px; }
+  .quest {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 3px;
+    padding: 4px 8px;
+  }
+  .quest-row,
+  .quest-track { grid-column: 1; min-width: 0; }
+  .quest-claim {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    min-height: 32px;
+    padding: 0 10px;
+    box-shadow: none;
+  }
+  .inspire {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 6px;
+  }
+  #inspire-label { font-size: 10px; white-space: nowrap; }
+  .offer-btn { min-height: 30px; }
+  .merge { flex: 1 1 auto; min-height: 0; }
   .order-card { padding: 2px 4px; gap: 1px; }
   .order-card p.order-why { -webkit-line-clamp: 1; font-size: 10px; }
   .order-need-name { display: none; }
