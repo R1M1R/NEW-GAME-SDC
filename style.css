@@ -2196,4 +2196,12 @@ body.is-paused .app * {
   .order-need { padding: 1px 3px 1px 1px; }
   .order-need canvas { width: 18px; height: 18px; }
   .order-submit { min-height: 24px; margin-top: 0; padding: 2px 4px; }
+  .cell-level {
+    left: 2px;
+    top: 2px;
+    min-width: 0;
+    padding: 0 3px;
+    font-size: 8px;
+    line-height: 1.2;
+  }
 }
