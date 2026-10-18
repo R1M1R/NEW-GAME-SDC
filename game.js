@@ -1016,7 +1016,7 @@
 
   function renderOrders() {
     if (!nodes.ordersList) return;
-    if (nodes.ordersKicker) nodes.ordersKicker.textContent = i18n.t('design.orders');
+    if (nodes.ordersKicker) nodes.ordersKicker.textContent = labelOr('design.orders', i18n.lang === 'en' ? 'Orders' : 'Заказы');
     if (nodes.ordersPrestige) {
       nodes.ordersPrestige.textContent = i18n.t('design.prestige', {
         pct: String(Math.round((state.prestige || 0) * 100))
@@ -1079,12 +1079,20 @@
     return price;
   }
 
+  function labelOr(path, fallback) {
+    var value = i18n.t(path);
+    return !value || value === path ? fallback : value;
+  }
+
   function renderZonePins() {
+    var shortRu = { window: 'Окно', light: 'Свет', soft: 'Диван', tech: 'Техника', floor: 'Пол' };
+    var shortEn = { window: 'Window', light: 'Light', soft: 'Sofa', tech: 'Tech', floor: 'Floor' };
+    var short = i18n.lang === 'en' ? shortEn : shortRu;
     ZONE_IDS.forEach(function (id) {
       var pin = $('zone-' + id);
       if (!pin) return;
       var zone = state.zones[id];
-      pin.querySelector('b').textContent = i18n.t('design.' + id);
+      pin.querySelector('b').textContent = short[id];
       pin.querySelector('em').textContent = String(zone.level);
       pin.classList.toggle('is-on', zone.style > 0);
     });
@@ -1215,9 +1223,11 @@
     nodes.merge.classList.toggle('is-fever', fever);
     nodes.spawn.classList.toggle('is-fever', fever);
     nodes.inspireFill.style.width = (fever ? 100 : Math.round(state.inspiration * 100)) + '%';
-    nodes.inspireLabel.textContent = fever
-      ? i18n.t('design.fever') + ' ' + i18n.t('design.feverLeft', { sec: String(Math.ceil(state.feverLeftMs / 1000)) })
-      : i18n.t('design.inspire');
+    var feverName = labelOr('design.fever', i18n.lang === 'en' ? 'DESIGN OVERDRIVE' : 'ДИЗАЙН-ФОРСАЖ');
+    var seconds = String(Math.ceil(state.feverLeftMs / 1000));
+    var left = i18n.t('design.feverLeft', { sec: seconds });
+    if (!left || left === 'design.feverLeft') left = seconds + (i18n.lang === 'en' ? 's' : ' с');
+    nodes.inspireLabel.textContent = fever ? feverName + ' ' + left : labelOr('design.inspire', i18n.lang === 'en' ? 'Inspiration' : 'Вдохновение');
   }
 
   function renderEvent() {
@@ -1881,7 +1891,7 @@
   function pokeCat(event) {
     if (!art.catRect || !nodes.room) return false;
     var rect = nodes.room.getBoundingClientRect();
-    var hit = art.catRect(rect.width, rect.height, discoveredMax());
+    var hit = art.catRect(rect.width, rect.height);
     if (!hit) return false;
     var x = event.clientX - rect.left;
     var y = event.clientY - rect.top;

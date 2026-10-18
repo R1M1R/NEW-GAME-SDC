@@ -1041,14 +1041,14 @@
     ctx.lineTo(win.x + win.w, win.y + win.h * 0.46);
     ctx.stroke();
     paintFloorPlane(ctx, shell, floorStyle, tier);
-    if (maxLevel >= 2) drawRug(ctx, shell, floorStyle);
-    if (maxLevel >= 2) drawFrames(ctx, shell, maxLevel >= 6 ? 2 : 1);
-    if (maxLevel >= 2) drawSofa(ctx, shell, softStyle, t);
-    if (maxLevel >= 4) drawCoffee(ctx, shell);
-    if (maxLevel >= 2) drawPlant(ctx, shell, t);
-    if (maxLevel >= 2) drawTorch(ctx, shell, lightStyle, t);
-    if (maxLevel >= 2) drawChandelier(ctx, shell, lightStyle || (tier >= 5 ? 3 : 1), t);
-    if (maxLevel >= 8) drawWorkstation(ctx, shell, techStyle, t);
+    drawRug(ctx, shell, floorStyle);
+    drawFrames(ctx, shell, maxLevel >= 6 ? 2 : 1);
+    drawSofa(ctx, shell, softStyle, t);
+    if (maxLevel >= 3) drawCoffee(ctx, shell);
+    drawPlant(ctx, shell, t);
+    drawTorch(ctx, shell, lightStyle, t);
+    drawChandelier(ctx, shell, lightStyle || (tier >= 5 ? 3 : 1), t);
+    if (maxLevel >= 6) drawWorkstation(ctx, shell, techStyle, t);
     if (tier === 0) {
       ctx.strokeStyle = 'rgba(40, 32, 28, 0.4)';
       ctx.lineWidth = 2;
@@ -1061,8 +1061,7 @@
     ctx.fillRect(0, 0, w, h);
   }
 
-  function catRect(w, h, maxLevel) {
-    if ((maxLevel || 0) < 2) return null;
+  function catRect(w, h) {
     var shell = roomShell(w, h);
     var sofaW = (shell.x1 - shell.x0) * 0.46;
     var x = shell.x0 + 28 + sofaW * 0.5;

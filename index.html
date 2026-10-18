@@ -8,7 +8,7 @@
   <meta name="description" content="Аурелия — idle merge и ремонт квартиры от черновой студии до пентхауса.">
   <title>Аурелия</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect rx='6' width='32' height='32' fill='%2314110e'/%3E%3Cpath d='M6 14 L16 6 L26 14 V26 H6Z' fill='none' stroke='%23e4b15a' stroke-width='2'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=7">
   <script id="yandex-sdk" src="https://yandex.ru/games/sdk/v2" async></script>
 </head>
 <body>
@@ -31,11 +31,11 @@
       <section class="room" aria-labelledby="room-name">
         <canvas id="room-canvas" aria-hidden="true"></canvas>
         <div class="zone-layer" id="zone-layer">
-          <button type="button" class="zone-pin" data-zone="window" id="zone-window"><b data-i18n="design.window">Панорамное окно</b><em>0</em></button>
-          <button type="button" class="zone-pin" data-zone="light" id="zone-light"><b data-i18n="design.light">Освещение</b><em>0</em></button>
-          <button type="button" class="zone-pin" data-zone="soft" id="zone-soft"><b data-i18n="design.soft">Мягкая зона</b><em>0</em></button>
-          <button type="button" class="zone-pin" data-zone="tech" id="zone-tech"><b data-i18n="design.tech">Техника и декор</b><em>0</em></button>
-          <button type="button" class="zone-pin" data-zone="floor" id="zone-floor"><b data-i18n="design.floor">Пол и стены</b><em>0</em></button>
+          <button type="button" class="zone-pin" data-zone="window" id="zone-window"><b>Окно</b><em>0</em></button>
+          <button type="button" class="zone-pin" data-zone="light" id="zone-light"><b>Свет</b><em>0</em></button>
+          <button type="button" class="zone-pin" data-zone="soft" id="zone-soft"><b>Диван</b><em>0</em></button>
+          <button type="button" class="zone-pin" data-zone="tech" id="zone-tech"><b>Техника</b><em>0</em></button>
+          <button type="button" class="zone-pin" data-zone="floor" id="zone-floor"><b>Пол</b><em>0</em></button>
         </div>
         <button type="button" id="fuse-box" class="fuse-box" hidden>⚡</button>
         <div class="room-caption">
@@ -45,7 +45,7 @@
       </section>
       <section class="orders" id="orders" aria-labelledby="orders-kicker">
         <div class="orders-head">
-          <span class="orders-kicker" id="orders-kicker" data-i18n="design.orders">VIP-заказы</span>
+          <span class="orders-kicker" id="orders-kicker">Заказы</span>
           <span class="orders-prestige" id="orders-prestige">Престиж +0%</span>
         </div>
         <div class="orders-list" id="orders-list"></div>
@@ -107,7 +107,7 @@
       </div>
       <div class="inspire" id="inspire">
         <div class="inspire-track" aria-hidden="true"><div id="inspire-fill"></div></div>
-        <span id="inspire-label" data-i18n="design.inspire">Вдохновение</span>
+        <span id="inspire-label">Вдохновение</span>
       </div>
       <div class="offer-row">
         <div class="offer-col">
@@ -204,12 +204,12 @@
   </div>
   <div id="ad-root"></div>
   <div id="offline-root"></div>
-  <script src="i18n.js"></script>
-  <script src="audio.js"></script>
-  <script src="graphics.js"></script>
-  <script src="juice.js"></script>
-  <script src="game.js"></script>
-  <script src="sdk.js"></script>
-  <script src="auto-qa.js"></script>
+  <script src="i18n.js?v=7"></script>
+  <script src="audio.js?v=7"></script>
+  <script src="graphics.js?v=7"></script>
+  <script src="juice.js?v=7"></script>
+  <script src="game.js?v=7"></script>
+  <script src="sdk.js?v=7"></script>
+  <script src="auto-qa.js?v=7"></script>
 </body>
 </html>
