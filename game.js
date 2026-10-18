@@ -93,7 +93,9 @@
 
   function rollQuest(index, maxLevel) {
     var tier = Math.floor(index / 3) + 1;
-    var rewardMoney = Math.round(140 * Math.pow(1.62, tier));
+    var rate = 8;
+    try { rate = steadyIncome(); } catch (error) { rate = 8; }
+    var rewardMoney = Math.max(Math.round(140 * Math.pow(1.62, tier)), Math.round(rate * 20));
     var rewardCrystals = 1 + Math.floor(tier / 2);
     if (index === 0) {
       return { type: 'merge', target: 4, progress: 0, rewardMoney: 160, rewardCrystals: 2 };
@@ -103,13 +105,11 @@
         type: 'discover',
         target: Math.min(15, maxLevel + 1),
         progress: 0,
-        rewardMoney: rewardMoney,
+        rewardMoney: Math.max(rewardMoney, Math.round(rate * 40)),
         rewardCrystals: rewardCrystals + 1
       };
     }
     if (index % 3 === 2) {
-      var rate = 8;
-      try { rate = steadyIncome(); } catch (error) { rate = 8; }
       return {
         type: 'earn',
         target: Math.max(400, Math.round(rate * 75)),
@@ -220,11 +220,10 @@
     var a;
     var b;
     if (bag.length >= 2) {
-      var first = Math.floor(Math.random() * bag.length);
-      var second = Math.floor(Math.random() * (bag.length - 1));
-      if (second >= first) second += 1;
-      a = bag[first];
-      b = bag[second];
+      bag.sort(function (x, y) { return y - x; });
+      var hero = Math.floor(Math.random() * Math.max(1, Math.ceil(bag.length / 3)));
+      a = bag.splice(hero, 1)[0];
+      b = bag[Math.floor(Math.random() * bag.length)];
     } else if (bag.length === 1) {
       a = bag[0];
       b = spawn;
@@ -247,8 +246,9 @@
     return {
       uid: source.orderSeq,
       client: pool[Math.floor(Math.random() * pool.length)],
+      why: Math.floor(Math.random() * 3),
       needs: [a, b],
-      money: Math.round((itemIncome(a) + itemIncome(b)) * 8 + boardRate(source) * 18),
+      money: orderPayout(source, [a, b]),
       crystals: Math.max(1, Math.round((a + b) / 3)),
       prestige: (6 + a + b) / 100,
       missSince: 0
@@ -293,6 +293,7 @@
         if (n !== i && state.orders[n]) exclude.push(state.orders[n].client);
       }
       var next = rollOrder(state, exclude, reserved);
+      toast(i18n.t('design.left', { name: i18n.t('clients.' + order.client + '.name') }));
       state.orders[i] = next;
       holdPieces(counts, next.needs, reserved);
       changed = true;
@@ -303,9 +304,11 @@
   function seedOrders(source) {
     source.orders = [];
     var exclude = [];
+    var reserved = [];
     for (var i = 0; i < 2; i += 1) {
-      var order = rollOrder(source, exclude);
+      var order = rollOrder(source, exclude, reserved);
       exclude.push(order.client);
+      reserved = reserved.concat(order.needs);
       source.orders.push(order);
     }
   }
@@ -426,7 +429,8 @@
           ],
           money: clamp(order.money, 1, MAX_MONEY),
           crystals: Math.floor(clamp(order.crystals, 0, 1000)),
-          prestige: clamp(order.prestige, 0.01, 1)
+          prestige: clamp(order.prestige, 0.01, 1),
+          why: Math.floor(clamp(order.why || 0, 0, 2))
         });
       });
     }
@@ -469,6 +473,12 @@
   function rentMultiplier() {
     var fever = state.feverLeftMs > 0 ? 3 : 1;
     return (1 + 0.25 * state.upgrades.rent) * (1 + (state.prestige || 0)) * (state.boostLeftMs > 0 ? 2 : 1) * fever;
+  }
+
+  function orderPayout(source, needs) {
+    var pieces = 0;
+    for (var i = 0; i < needs.length; i += 1) pieces += itemIncome(needs[i]);
+    return Math.min(MAX_MONEY, Math.max(10, Math.round(pieces * 8 + boardRate(source) * 12)));
   }
 
   function boardRate(source) {
@@ -1175,6 +1185,7 @@
     for (var i = 0; i < state.orders.length; i += 1) if (state.orders[i].uid === uid) index = i;
     if (index < 0) return;
     var order = state.orders[index];
+    order.money = orderPayout(state, order.needs);
     var spots = claimMap()[order.uid];
     if (!spots) return;
     spots.forEach(function (cellIndex) { flyOrderPiece(cellIndex, card); });
@@ -1204,20 +1215,54 @@
     save();
   }
 
-  function stockLine(order) {
+  function orderViews() {
     var used = {};
-    var have = 0;
-    for (var n = 0; n < order.needs.length; n += 1) {
-      for (var i = 0; i < state.grid.length; i += 1) {
-        if (used[i]) continue;
-        if (state.grid[i] === order.needs[n]) {
+    return state.orders.map(function (order) {
+      var lines = order.needs.map(function (level) {
+        var have = false;
+        for (var i = 0; i < CELLS; i += 1) {
+          if (used[i] || state.grid[i] !== level) continue;
           used[i] = true;
-          have += 1;
+          have = true;
           break;
         }
-      }
-    }
-    return i18n.t('design.stock', { have: String(have), need: String(order.needs.length) });
+        return { level: level, have: have };
+      });
+      return {
+        order: order,
+        lines: lines,
+        ready: lines.every(function (line) { return line.have; })
+      };
+    });
+  }
+
+  function clientWhy(order) {
+    var id = order.client.charAt(0).toUpperCase() + order.client.slice(1);
+    var spoken = labelOr('design.why' + id + String(order.why || 0), '');
+    if (spoken) return spoken;
+    return i18n.t('design.wish' + id, {
+      a: i18n.t('items.' + order.needs[0] + '.name'),
+      b: i18n.t('items.' + order.needs[1] + '.name')
+    });
+  }
+
+  function needChip(line, twin) {
+    var chip = document.createElement('div');
+    chip.className = 'order-need' + (line.have ? ' is-have' : '');
+    var icon = document.createElement('canvas');
+    icon.width = 56;
+    icon.height = 56;
+    art.paintItem(icon.getContext('2d'), line.level, 56, animTime);
+    var name = document.createElement('b');
+    name.className = 'order-need-name';
+    name.textContent = (twin ? '2 × ' : '') + i18n.t('items.' + line.level + '.name');
+    var mark = document.createElement('i');
+    mark.className = 'order-need-mark';
+    mark.textContent = line.have ? '✓' : i18n.t('grid.rank', { n: String(line.level) });
+    chip.appendChild(icon);
+    chip.appendChild(name);
+    chip.appendChild(mark);
+    return chip;
   }
 
   function renderOrders() {
@@ -1228,18 +1273,21 @@
         pct: String(Math.round((state.prestige || 0) * 100))
       });
     }
+    var views = orderViews();
     var sig = [i18n.lang, Math.round((state.prestige || 0) * 100)];
-    state.orders.forEach(function (order) {
-      sig.push(order.uid + (claimMap()[order.uid] ? 'y' : 'n'));
+    views.forEach(function (view) {
+      var flags = view.lines.map(function (line) { return line.have ? 'y' : 'n'; }).join('');
+      sig.push(view.order.uid + ':' + flags + ':' + (view.order.why || 0));
     });
     var nextSig = sig.join('|');
     if (nextSig === ordersSig) return;
     ordersSig = nextSig;
     nodes.ordersList.textContent = '';
-    state.orders.forEach(function (order) {
-      var ready = !!claimMap()[order.uid];
+    views.forEach(function (view) {
+      var order = view.order;
+      var money = orderPayout(state, order.needs);
       var card = document.createElement('article');
-      card.className = 'order-card' + (ready ? ' is-ready' : '');
+      card.className = 'order-card' + (view.ready ? ' is-ready' : '');
       var top = document.createElement('div');
       top.className = 'order-top';
       var heading = document.createElement('strong');
@@ -1248,44 +1296,39 @@
       role.textContent = i18n.t('clients.' + order.client + '.role');
       top.appendChild(heading);
       top.appendChild(role);
-      var need = document.createElement('p');
-      need.textContent = i18n.t('design.wish' + order.client.charAt(0).toUpperCase() + order.client.slice(1), {
-        a: i18n.t('items.' + order.needs[0] + '.name'),
-        b: i18n.t('items.' + order.needs[1] + '.name')
-      });
-      card.appendChild(top);
-      card.appendChild(need);
-      var owned = stockLine(order);
-      var pay = document.createElement('em');
-      pay.className = 'order-pay';
-      pay.textContent = i18n.t('design.reward', {
-        money: formatCompact(order.money),
+      var why = document.createElement('p');
+      why.className = 'order-why';
+      why.textContent = clientWhy(order);
+      var row = document.createElement('div');
+      row.className = 'order-row';
+      var needs = document.createElement('div');
+      needs.className = 'order-needs';
+      if (order.needs[0] === order.needs[1]) {
+        needs.appendChild(needChip({ level: order.needs[0], have: view.ready }, true));
+      } else {
+        view.lines.forEach(function (line) { needs.appendChild(needChip(line, false)); });
+      }
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'order-submit';
+      button.disabled = !view.ready;
+      var verb = document.createElement('b');
+      verb.textContent = i18n.t(view.ready ? 'design.submit' : 'design.locked');
+      var prize = document.createElement('small');
+      prize.className = 'order-pay';
+      prize.textContent = i18n.t('design.reward', {
+        money: formatCompact(money),
         crystals: String(order.crystals),
         pct: String(Math.round(order.prestige * 100))
       });
-      if (!ready) {
-        var wait = document.createElement('span');
-        wait.className = 'order-wait';
-        wait.textContent = owned;
-        card.appendChild(wait);
-        card.appendChild(pay);
-      } else {
-        var button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'order-submit';
-        var verb = document.createElement('b');
-        verb.textContent = i18n.t('design.submit');
-        var prize = document.createElement('small');
-        prize.textContent = i18n.t('design.reward', {
-          money: formatCompact(order.money),
-          crystals: String(order.crystals),
-          pct: String(Math.round(order.prestige * 100))
-        });
-        button.appendChild(verb);
-        button.appendChild(prize);
-        button.addEventListener('click', function () { deliverOrder(order.uid, card); });
-        card.appendChild(button);
-      }
+      button.appendChild(verb);
+      button.appendChild(prize);
+      if (view.ready) button.addEventListener('click', function () { deliverOrder(order.uid, card); });
+      row.appendChild(needs);
+      row.appendChild(button);
+      card.appendChild(top);
+      card.appendChild(why);
+      card.appendChild(row);
       nodes.ordersList.appendChild(card);
     });
   }
