@@ -65,6 +65,15 @@
   var AUTO_MS = 60000;
   var DRONE_EVERY = 50;
   var DRONE_FLIGHT = 6.4;
+  var CLIENT_IDS = ['kirill', 'sofia', 'viktor', 'alina', 'mark', 'lera'];
+  var ZONE_IDS = ['floor', 'window', 'soft', 'light', 'tech'];
+  var STYLE_KEYS = ['scandi', 'loft', 'lux'];
+  var ZONE_MAX = 6;
+  var FEVER_MS = 15000;
+  var inspireAt = 0;
+  var ordersSig = '';
+  var sheetSale = false;
+  var styleZone = '';
 
   function $(id) { return document.getElementById(id); }
 
@@ -116,12 +125,59 @@
     };
   }
 
+  function blankZones() {
+    return {
+      floor: { style: 0, level: 0 },
+      window: { style: 0, level: 0 },
+      soft: { style: 0, level: 0 },
+      light: { style: 0, level: 0 },
+      tech: { style: 0, level: 0 }
+    };
+  }
+
+  function rollOrder(source, exclude) {
+    var peak = Math.max(1, Math.min(12, discoveredMaxOf(source) || 1));
+    var a = Math.max(1, peak - (Math.random() < 0.55 ? 1 : 0));
+    var b = Math.max(1, peak - (Math.random() < 0.35 ? 0 : 1));
+    if (a > b) {
+      var swap = a;
+      a = b;
+      b = swap;
+    }
+    if (Math.random() < 0.45 && peak < 12) b = Math.min(12, peak + 1);
+    var pool = [];
+    var skip = exclude || [];
+    for (var i = 0; i < CLIENT_IDS.length; i += 1) {
+      if (skip.indexOf(CLIENT_IDS[i]) < 0) pool.push(CLIENT_IDS[i]);
+    }
+    if (!pool.length) pool = CLIENT_IDS.slice();
+    source.orderSeq = (source.orderSeq || 0) + 1;
+    return {
+      uid: source.orderSeq,
+      client: pool[Math.floor(Math.random() * pool.length)],
+      needs: [a, b],
+      money: Math.round((itemIncome(a) + itemIncome(b)) * 17.5),
+      crystals: Math.max(1, Math.round((a + b) / 3)),
+      prestige: (6 + a + b) / 100
+    };
+  }
+
+  function seedOrders(source) {
+    source.orders = [];
+    var exclude = [];
+    for (var i = 0; i < 2; i += 1) {
+      var order = rollOrder(source, exclude);
+      exclude.push(order.client);
+      source.orders.push(order);
+    }
+  }
+
   function fresh() {
     var grid = [];
     for (var i = 0; i < CELLS; i += 1) grid.push(0);
     grid[0] = 1;
     grid[1] = 1;
-    return {
+    var next = {
       v: 2,
       money: 0,
       crystals: 0,
@@ -142,8 +198,18 @@
       savedAt: Date.now(),
       muted: false,
       langChosen: false,
-      lang: 'ru'
+      lang: 'ru',
+      orderSeq: 0,
+      orders: [],
+      zones: blankZones(),
+      inspiration: 0,
+      feverLeftMs: 0,
+      prestige: 0,
+      event: null,
+      eventIn: 48
     };
+    seedOrders(next);
+    return next;
   }
 
   function sanitize(raw) {
@@ -194,6 +260,58 @@
     } else {
       next.quest = rollQuest(next.questIndex, discoveredMaxOf(next));
     }
+    next.inspiration = clamp(raw.inspiration, 0, 1);
+    next.feverLeftMs = clamp(raw.feverLeftMs, 0, FEVER_MS);
+    next.prestige = clamp(raw.prestige, 0, 50);
+    next.orderSeq = Math.floor(clamp(raw.orderSeq, 1, 1e9));
+    next.eventIn = clamp(raw.eventIn == null ? 48 : raw.eventIn, 0, 60);
+    next.zones = blankZones();
+    ZONE_IDS.forEach(function (id) {
+      var zone = raw.zones && raw.zones[id];
+      if (!zone) return;
+      next.zones[id] = {
+        style: Math.floor(clamp(zone.style, 0, 3)),
+        level: Math.floor(clamp(zone.level, 0, ZONE_MAX))
+      };
+    });
+    next.orders = [];
+    if (Array.isArray(raw.orders)) {
+      raw.orders.forEach(function (order) {
+        if (!order || CLIENT_IDS.indexOf(order.client) < 0) return;
+        if (!Array.isArray(order.needs) || order.needs.length !== 2) return;
+        next.orders.push({
+          uid: Math.floor(clamp(order.uid, 1, 1e9)),
+          client: order.client,
+          needs: [
+            Math.floor(clamp(order.needs[0], 1, 14)),
+            Math.floor(clamp(order.needs[1], 1, 14))
+          ],
+          money: clamp(order.money, 1, MAX_MONEY),
+          crystals: Math.floor(clamp(order.crystals, 0, 1000)),
+          prestige: clamp(order.prestige, 0.01, 1)
+        });
+      });
+    }
+    if (next.orders.length > 2) next.orders = next.orders.slice(0, 2);
+    if (next.orders.length < 2) {
+      var exclude = next.orders.map(function (order) { return order.client; });
+      while (next.orders.length < 2) {
+        var made = rollOrder(next, exclude);
+        exclude.push(made.client);
+        next.orders.push(made);
+      }
+    }
+    next.event = null;
+    if (raw.event && (raw.event.kind === 'sale' || raw.event.kind === 'surge')) {
+      var left = clamp(raw.event.left, 0, 15);
+      if (left > 0) {
+        next.event = {
+          kind: raw.event.kind,
+          left: left,
+          taps: Math.floor(clamp(raw.event.taps, 0, 10))
+        };
+      }
+    }
     return next;
   }
 
@@ -211,7 +329,8 @@
   }
 
   function rentMultiplier() {
-    return (1 + 0.25 * state.upgrades.rent) * (state.boostLeftMs > 0 ? 2 : 1);
+    var fever = state.feverLeftMs > 0 ? 3 : 1;
+    return (1 + 0.25 * state.upgrades.rent) * (1 + (state.prestige || 0)) * (state.boostLeftMs > 0 ? 2 : 1) * fever;
   }
 
   function incomePerSec() {
@@ -238,7 +357,9 @@
   }
 
   function priceOf(def, level) {
-    return Math.round(def.base * Math.pow(def.growth, level));
+    var price = Math.round(def.base * Math.pow(def.growth, level));
+    if (state.event && state.event.kind === 'sale' && state.event.left > 0) price = Math.max(1, Math.round(price * 0.5));
+    return price;
   }
 
   function formatCompact(value) {
@@ -398,12 +519,20 @@
 
   function cellPoint(index) {
     var cell = cells[index];
+    var point;
     if (!cell) {
       var board = nodes.board ? nodes.board.getBoundingClientRect() : { left: 0, top: 0, width: 0, height: 0 };
-      return { x: board.left + board.width / 2, y: board.top + board.height / 2 };
+      point = { x: board.left + board.width / 2, y: board.top + board.height / 2 };
+    } else {
+      var rect = cell.getBoundingClientRect();
+      point = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
     }
-    var rect = cell.getBoundingClientRect();
-    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    var dock = document.querySelector('.dock');
+    if (dock) {
+      var limit = dock.getBoundingClientRect().top - 28;
+      if (point.y > limit) point.y = limit;
+    }
+    return point;
   }
 
   function codexInfo(level) {
@@ -438,6 +567,7 @@
     var now = performance.now();
     combo = now - comboAt < 2200 ? combo + 1 : 1;
     comboAt = now;
+    chargeInspiration();
     audio.playMerge(combo);
     if (state.quest.type === 'merge') state.quest.progress += 1;
     if (!juice) return;
@@ -525,9 +655,17 @@
     return 1;
   }
 
+  function hardPaused() {
+    if (!platform || !platform.pause || !platform.pause.active) return false;
+    return platform.pause.has('ad') || platform.pause.has('hidden') || platform.pause.has('platform');
+  }
+
   function spawnPiece() {
-    if (platform && platform.pause && platform.pause.active) return;
-    if (state.energy < 1) {
+    if (qaDrive) {
+      if (hardPaused()) return;
+    } else if (platform && platform.pause && platform.pause.active) return;
+    var fever = state.feverLeftMs > 0;
+    if (!fever && state.energy < 1) {
       deny(nodes.spawn);
       toast(i18n.t('play.noEnergy'));
       syncEnergyOffer();
@@ -540,8 +678,8 @@
       return;
     }
     var count = Math.min(spawnCount(), holes.length);
-    var level = Math.min(14, 1 + state.upgrades.base);
-    state.energy -= 1;
+    var level = Math.min(14, 1 + state.upgrades.base + (fever ? 1 : 0));
+    if (!fever) state.energy -= 1;
     for (var i = 0; i < count; i += 1) {
       var pick = holes.splice(Math.floor(Math.random() * holes.length), 1)[0];
       state.grid[pick] = level;
@@ -627,13 +765,13 @@
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, box.w, box.h);
       if (!level) continue;
-      var size = Math.min(box.w, box.h);
       var pose = juice ? juice.pose(i) : { x: 1, y: 1 };
       ctx.save();
       ctx.translate(box.w / 2, box.h / 2);
       ctx.scale(pose.x, pose.y);
-      ctx.translate(-size / 2, -size / 2);
-      art.paintItem(ctx, level, size, time + i * 0.17);
+      ctx.translate(-box.w / 2, -box.h / 2);
+      if (art.paintToken) art.paintToken(ctx, level, box.w, box.h, time + i * 0.17);
+      else art.paintItem(ctx, level, box.w, time + i * 0.17);
       ctx.restore();
     }
   }
@@ -643,7 +781,8 @@
     if (!box) return;
     art.paintRoom(nodes.room.getContext('2d'), box.w, box.h, {
       maxLevel: discoveredMax(),
-      rentLevel: state.upgrades.rent
+      rentLevel: state.upgrades.rent,
+      zones: state.zones
     }, time);
   }
 
@@ -654,7 +793,7 @@
       if (level) filled += 1;
       cells[i].classList.toggle('has-item', !!level);
       var badge = cells[i].querySelector('.cell-level');
-      badge.textContent = level ? String(level) : '';
+      badge.textContent = level ? i18n.t('grid.rank', { n: String(level) }) : '';
       cells[i].setAttribute('aria-label', level
         ? i18n.t('items.' + level + '.name')
         : i18n.t('grid.cell', { n: String(i + 1) }));
@@ -699,6 +838,10 @@
     }
     renderAffordance();
     renderOffers();
+    renderOrders();
+    renderZonePins();
+    renderInspire();
+    renderEvent();
     var rush = $('rush-timer');
     if (rush) {
       rush.textContent = state.boostLeftMs > 0
@@ -734,7 +877,360 @@
       var cost = Number(button.dataset.cost);
       var broke = button.dataset.maxed === '1' || (button.dataset.pay === 'crystals' ? state.crystals < cost : state.money < cost);
       button.classList.toggle('is-broke', broke);
+      button.classList.toggle('is-ready', !broke);
     }
+  }
+
+  var COIN_ICON = '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12" fill="#e4b15a"/><circle cx="16" cy="16" r="8" fill="none" stroke="#8a5a22" stroke-width="2"/></svg>';
+  var GEM_ICON = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 L26 12 L16 29 L6 12Z" fill="#7fd0d8"/><path d="M16 3 L20 12 L16 29 L12 12Z" fill="#d9fbff"/></svg>';
+
+  function setBuyFace(button, verb, price, pay) {
+    button.textContent = '';
+    var icon = document.createElement('span');
+    icon.className = 'buy-icon';
+    icon.innerHTML = pay === 'crystals' ? GEM_ICON : COIN_ICON;
+    var label = document.createElement('span');
+    label.className = 'buy-label';
+    label.textContent = verb;
+    button.appendChild(icon);
+    button.appendChild(label);
+    if (price) {
+      var chip = document.createElement('span');
+      chip.className = 'buy-price';
+      chip.textContent = price;
+      button.appendChild(chip);
+    }
+  }
+
+  function chargeInspiration() {
+    if (state.feverLeftMs > 0) return;
+    var now = performance.now();
+    if (now - inspireAt < 4500) state.inspiration = Math.min(1, state.inspiration + 0.24);
+    else state.inspiration = Math.max(0.18, state.inspiration);
+    inspireAt = now;
+    if (state.inspiration >= 1) {
+      state.inspiration = 1;
+      state.feverLeftMs = FEVER_MS;
+      audio.playNewLevelUnlock();
+      toast(i18n.t('design.fever'));
+      if (juice) juice.shake(12);
+    }
+  }
+
+  function claimMap() {
+    var used = {};
+    var map = {};
+    state.orders.forEach(function (order) {
+      var found = [];
+      for (var n = 0; n < order.needs.length; n += 1) {
+        var hit = -1;
+        for (var i = 0; i < CELLS; i += 1) {
+          if (used[i]) continue;
+          if (state.grid[i] === order.needs[n]) {
+            hit = i;
+            break;
+          }
+        }
+        if (hit < 0) {
+          found = null;
+          break;
+        }
+        used[hit] = true;
+        found.push(hit);
+      }
+      map[order.uid] = found;
+    });
+    return map;
+  }
+
+  function findOrderCells(needs) {
+    var used = {};
+    var found = [];
+    for (var n = 0; n < needs.length; n += 1) {
+      var hit = -1;
+      for (var i = 0; i < CELLS; i += 1) {
+        if (used[i]) continue;
+        if (state.grid[i] === needs[n]) {
+          hit = i;
+          break;
+        }
+      }
+      if (hit < 0) return null;
+      used[hit] = true;
+      found.push(hit);
+    }
+    return found;
+  }
+
+  function flyOrderPiece(index, card) {
+    var cell = cells[index];
+    if (!cell || !card) return;
+    var from = cell.getBoundingClientRect();
+    var to = card.getBoundingClientRect();
+    var node = document.createElement('div');
+    node.className = 'order-fly';
+    var canvas = document.createElement('canvas');
+    canvas.width = 112;
+    canvas.height = 112;
+    art.paintItem(canvas.getContext('2d'), state.grid[index], 112, animTime);
+    node.appendChild(canvas);
+    node.style.left = from.left + 'px';
+    node.style.top = from.top + 'px';
+    document.body.appendChild(node);
+    requestAnimationFrame(function () {
+      node.style.transform = 'translate(' + (to.left - from.left + to.width * 0.3) + 'px,' + (to.top - from.top) + 'px) scale(0.25)';
+      node.style.opacity = '0.15';
+    });
+    setTimeout(function () {
+      if (node.parentNode) node.parentNode.removeChild(node);
+    }, 520);
+  }
+
+  function deliverOrder(uid, card) {
+    var index = -1;
+    for (var i = 0; i < state.orders.length; i += 1) if (state.orders[i].uid === uid) index = i;
+    if (index < 0) return;
+    var order = state.orders[index];
+    var spots = claimMap()[order.uid];
+    if (!spots) return;
+    spots.forEach(function (cellIndex) { flyOrderPiece(cellIndex, card); });
+    spots.forEach(function (cellIndex) { state.grid[cellIndex] = 0; });
+    state.money = Math.min(MAX_MONEY, state.money + order.money);
+    state.crystals = Math.min(MAX_CRYSTALS, state.crystals + order.crystals);
+    state.prestige = Math.min(50, state.prestige + order.prestige);
+    audio.playCoin();
+    audio.playUpgrade();
+    var point = card.getBoundingClientRect();
+    if (juice) {
+      juice.burst(point.left + point.width / 2, point.top + 20, 'confetti');
+      juice.floatText(point.left + point.width / 2, point.top, '+' + formatCompact(order.money) + ' 💰', 'gold');
+    }
+    toast(i18n.t('design.delivered', { name: i18n.t('clients.' + order.client + '.name') }));
+    var exclude = state.orders.map(function (item) { return item.client; });
+    state.orders[index] = rollOrder(state, exclude);
+    ordersSig = '';
+    renderBoard();
+    renderHud();
+    save();
+  }
+
+  function renderOrders() {
+    if (!nodes.ordersList) return;
+    if (nodes.ordersKicker) nodes.ordersKicker.textContent = i18n.t('design.orders');
+    if (nodes.ordersPrestige) {
+      nodes.ordersPrestige.textContent = i18n.t('design.prestige', {
+        pct: String(Math.round((state.prestige || 0) * 100))
+      });
+    }
+    var sig = [i18n.lang, Math.round((state.prestige || 0) * 100)];
+    state.orders.forEach(function (order) {
+      sig.push(order.uid + (claimMap()[order.uid] ? 'y' : 'n'));
+    });
+    var nextSig = sig.join('|');
+    if (nextSig === ordersSig) return;
+    ordersSig = nextSig;
+    nodes.ordersList.textContent = '';
+    state.orders.forEach(function (order) {
+      var ready = !!claimMap()[order.uid];
+      var card = document.createElement('article');
+      card.className = 'order-card' + (ready ? ' is-ready' : '');
+      var top = document.createElement('div');
+      top.className = 'order-top';
+      var heading = document.createElement('strong');
+      heading.textContent = i18n.t('clients.' + order.client + '.name');
+      var role = document.createElement('span');
+      role.textContent = i18n.t('clients.' + order.client + '.role');
+      top.appendChild(heading);
+      top.appendChild(role);
+      var need = document.createElement('p');
+      need.textContent = i18n.t('design.need', { a: String(order.needs[0]), b: String(order.needs[1]) });
+      card.appendChild(top);
+      card.appendChild(need);
+      if (ready) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'order-submit';
+        var verb = document.createElement('b');
+        verb.textContent = i18n.t('design.submit');
+        var prize = document.createElement('small');
+        prize.textContent = i18n.t('design.reward', {
+          money: formatCompact(order.money),
+          crystals: String(order.crystals),
+          pct: String(Math.round(order.prestige * 100))
+        });
+        button.appendChild(verb);
+        button.appendChild(prize);
+        button.addEventListener('click', function () { deliverOrder(order.uid, card); });
+        card.appendChild(button);
+      } else {
+        var wait = document.createElement('span');
+        wait.className = 'order-wait';
+        wait.textContent = i18n.t('design.waiting');
+        card.appendChild(wait);
+      }
+      nodes.ordersList.appendChild(card);
+    });
+  }
+
+  function zonePrice(zone) {
+    var level = Math.min(zone.level, ZONE_MAX - 1);
+    var price = Math.round(30 * Math.pow(1.7, level));
+    if (state.event && state.event.kind === 'sale' && state.event.left > 0) price = Math.max(1, Math.round(price * 0.5));
+    return price;
+  }
+
+  function renderZonePins() {
+    ZONE_IDS.forEach(function (id) {
+      var pin = $('zone-' + id);
+      if (!pin) return;
+      var zone = state.zones[id];
+      pin.querySelector('b').textContent = i18n.t('design.' + id);
+      pin.querySelector('em').textContent = String(zone.level);
+      pin.classList.toggle('is-on', zone.style > 0);
+    });
+  }
+
+  function openStyle(id) {
+    styleZone = id;
+    if (openTab) closeSheet();
+    nodes.styleTitle.textContent = i18n.t('design.styleTitle', { zone: i18n.t('design.' + id) });
+    nodes.styleLead.textContent = i18n.t('design.styleLead');
+    nodes.styleChoices.textContent = '';
+    var zone = state.zones[id];
+    var price = zonePrice(zone);
+    var broke = state.money < price;
+    STYLE_KEYS.forEach(function (key, index) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'style-choice' + (broke ? ' is-broke' : ' is-ready') + (zone.style === index + 1 ? ' is-on' : '');
+      var name = document.createElement('strong');
+      name.textContent = i18n.t('design.' + key);
+      var cost = document.createElement('span');
+      cost.textContent = i18n.t(zone.level >= ZONE_MAX ? 'design.styleMax' : 'design.stylePrice', {
+        price: formatCompact(price)
+      });
+      button.appendChild(name);
+      button.appendChild(cost);
+      button.addEventListener('click', function () { applyStyle(id, index + 1, button); });
+      nodes.styleChoices.appendChild(button);
+    });
+    nodes.styleModal.hidden = false;
+  }
+
+  function closeStyle() {
+    styleZone = '';
+    nodes.styleModal.hidden = true;
+  }
+
+  function applyStyle(id, style, button) {
+    var zone = state.zones[id];
+    var price = zonePrice(zone);
+    if (state.money < price) {
+      deny(button);
+      toast(i18n.t('toast.brokeMoney'));
+      return;
+    }
+    state.money -= price;
+    zone.style = style;
+    if (zone.level < ZONE_MAX) zone.level += 1;
+    audio.playUpgrade();
+    toast(i18n.t('design.zoneDone', { style: i18n.t('design.' + STYLE_KEYS[style - 1]) }));
+    closeStyle();
+    drawRoom(animTime);
+    renderHud();
+    if (openTab === 'upgrades') buildSheet();
+    save();
+  }
+
+  function beginEvent() {
+    var kind = Math.random() < 0.5 ? 'sale' : 'surge';
+    state.event = { kind: kind, left: 15, taps: 0 };
+    state.eventIn = 45 + Math.random() * 15;
+    audio.playNewLevelUnlock();
+    if (kind === 'sale' && openTab === 'upgrades') buildSheet();
+    sheetSale = kind === 'sale';
+  }
+
+  function grantRareChest() {
+    var level = Math.min(14, Math.max(2, discoveredMax() + 2));
+    var holes = emptyIndexes();
+    if (!holes.length) {
+      var gold = Math.max(250, Math.round(incomePerSec() * 20));
+      state.money = Math.min(MAX_MONEY, state.money + gold);
+      toast(i18n.t('design.rareGold', { amount: formatCompact(gold) }));
+      audio.playCoin();
+      return;
+    }
+    var index = holes[Math.floor(Math.random() * holes.length)];
+    state.grid[index] = level;
+    noteDiscover(level, index);
+    if (juice) juice.kick(index, 'spawn');
+    popCell(index);
+    toast(i18n.t('design.rareChest', { name: i18n.t('items.' + level + '.name') }));
+    audio.playCoin();
+    renderBoard();
+  }
+
+  function tapFuse() {
+    if (!state.event || state.event.kind !== 'surge') return;
+    state.event.taps += 1;
+    audio.playSpawn();
+    if (juice && nodes.fuse) {
+      var box = nodes.fuse.getBoundingClientRect();
+      juice.burst(box.left + box.width / 2, box.top + box.height / 2, 'spark');
+    }
+    if (state.event.taps >= 10) {
+      grantRareChest();
+      state.event = null;
+      state.eventIn = 45 + Math.random() * 15;
+    }
+    renderHud();
+    save();
+  }
+
+  function stepDesign(dt) {
+    if (state.feverLeftMs > 0) {
+      state.feverLeftMs = Math.max(0, state.feverLeftMs - dt * 1000);
+      if (state.feverLeftMs === 0) state.inspiration = 0;
+    } else if (performance.now() - inspireAt > 4500) {
+      state.inspiration = Math.max(0, state.inspiration - dt * 0.1);
+    }
+    var wasSale = !!(state.event && state.event.kind === 'sale');
+    if (state.event) {
+      state.event.left -= dt;
+      if (state.event.left <= 0) state.event = null;
+    } else {
+      state.eventIn -= dt;
+      if (state.eventIn <= 0) beginEvent();
+    }
+    var sale = !!(state.event && state.event.kind === 'sale');
+    if (sale !== wasSale && openTab === 'upgrades') buildSheet();
+    sheetSale = sale;
+  }
+
+  function renderInspire() {
+    if (!nodes.inspireFill) return;
+    var fever = state.feverLeftMs > 0;
+    nodes.inspire.classList.toggle('is-fever', fever);
+    nodes.merge.classList.toggle('is-fever', fever);
+    nodes.spawn.classList.toggle('is-fever', fever);
+    nodes.inspireFill.style.width = (fever ? 100 : Math.round(state.inspiration * 100)) + '%';
+    nodes.inspireLabel.textContent = fever
+      ? i18n.t('design.fever') + ' ' + i18n.t('design.feverLeft', { sec: String(Math.ceil(state.feverLeftMs / 1000)) })
+      : i18n.t('design.inspire');
+  }
+
+  function renderEvent() {
+    if (!nodes.eventBanner) return;
+    var event = state.event;
+    nodes.eventBanner.hidden = !event;
+    if (nodes.fuse) nodes.fuse.hidden = !(event && event.kind === 'surge');
+    if (!event) return;
+    nodes.eventTitle.textContent = i18n.t(event.kind === 'sale' ? 'design.saleTitle' : 'design.surgeTitle');
+    nodes.eventCopy.textContent = event.kind === 'sale'
+      ? i18n.t('design.saleCopy')
+      : i18n.t('design.surgeCopy', { have: String(event.taps) });
+    nodes.eventTimer.textContent = i18n.t('design.eventLeft', { sec: String(Math.max(0, Math.ceil(event.left))) });
   }
 
   function makeCard(title, desc) {
@@ -770,9 +1266,8 @@
     button.dataset.pay = def.pay;
     button.dataset.cost = String(price);
     button.dataset.maxed = maxed ? '1' : '0';
-    if (maxed) button.textContent = i18n.t('branch.maxed');
-    else if (def.pay === 'crystals') button.textContent = i18n.t('branch.buyGems', { price: formatCompact(price) });
-    else button.textContent = i18n.t('branch.buy', { price: formatCompact(price) });
+    if (maxed) setBuyFace(button, i18n.t('branch.maxed'), '', def.pay);
+    else setBuyFace(button, i18n.t('branch.verb'), formatCompact(price), def.pay);
   }
 
   function buyBranch(def, button) {
@@ -901,9 +1396,7 @@
       button.dataset.pay = def.pay;
       button.dataset.cost = String(def.cost);
       button.dataset.maxed = '0';
-      button.textContent = i18n.t(def.pay === 'crystals' ? 'shop.payCrystals' : 'shop.payMoney', {
-        price: formatCompact(def.cost)
-      });
+      setBuyFace(button, i18n.t('shop.verb'), formatCompact(def.cost), def.pay);
       button.addEventListener('click', function () { buyPack(def, button); });
       card.appendChild(button);
       stack.appendChild(card);
@@ -1012,11 +1505,11 @@
       button.classList.toggle('is-active', active);
       button.setAttribute('aria-selected', active ? 'true' : 'false');
     });
-    nodes.sheet.hidden = false;
-    nodes.sheet.inert = false;
+    nodes.overlay.hidden = false;
+    nodes.overlay.inert = false;
     nodes.sheet.setAttribute('aria-hidden', 'false');
     buildSheet();
-    requestAnimationFrame(function () { nodes.sheet.classList.add('is-open'); });
+    requestAnimationFrame(function () { nodes.overlay.classList.add('is-open'); });
   }
 
   function closeSheet() {
@@ -1026,14 +1519,14 @@
       button.classList.remove('is-active');
       button.setAttribute('aria-selected', 'false');
     });
-    nodes.sheet.classList.remove('is-open');
+    nodes.overlay.classList.remove('is-open');
     nodes.sheet.setAttribute('aria-hidden', 'true');
     var finish = function () {
       if (openTab) return;
-      nodes.sheet.hidden = true;
-      nodes.sheet.inert = true;
+      nodes.overlay.hidden = true;
+      nodes.overlay.inert = true;
     };
-    nodes.sheet.addEventListener('transitionend', finish, { once: true });
+    nodes.overlay.addEventListener('transitionend', finish, { once: true });
     setTimeout(finish, 340);
   }
 
@@ -1310,6 +1803,7 @@
 
   function simulate(dt) {
     if (platform && platform.pause && platform.pause.active) return;
+    stepDesign(dt);
     stepDrone(dt);
     if (state.autoMergeLeftMs > 0 && !drag) {
       state.autoMergeLeftMs = Math.max(0, state.autoMergeLeftMs - dt * 1000);
@@ -1352,11 +1846,71 @@
     }
   }
 
+  var hintBucket = -1;
+  var catNext = 0;
+  var qaDrive = false;
+
+  function winkPairs() {
+    var groups = {};
+    for (var i = 0; i < CELLS; i += 1) {
+      var level = state.grid[i];
+      if (!level || level >= 15) continue;
+      if (!groups[level]) groups[level] = [];
+      groups[level].push(i);
+    }
+    Object.keys(groups).forEach(function (key) {
+      var list = groups[key];
+      if (list.length < 2) return;
+      for (var n = 0; n + 1 < list.length; n += 2) {
+        var a = cells[list[n]].getBoundingClientRect();
+        var b = cells[list[n + 1]].getBoundingClientRect();
+        nudgeCell(cells[list[n]], Math.sign(b.left - a.left), Math.sign(b.top - a.top));
+        nudgeCell(cells[list[n + 1]], Math.sign(a.left - b.left), Math.sign(a.top - b.top));
+      }
+    });
+  }
+
+  function nudgeCell(cell, dx, dy) {
+    cell.style.setProperty('--hint-x', (dx * 5) + 'px');
+    cell.style.setProperty('--hint-y', (dy * 4) + 'px');
+    cell.classList.remove('is-hint');
+    void cell.offsetWidth;
+    cell.classList.add('is-hint');
+  }
+
+  function pokeCat(event) {
+    if (!art.catRect || !nodes.room) return false;
+    var rect = nodes.room.getBoundingClientRect();
+    var hit = art.catRect(rect.width, rect.height, discoveredMax());
+    if (!hit) return false;
+    var x = event.clientX - rect.left;
+    var y = event.clientY - rect.top;
+    if (x < hit.x || y < hit.y || x > hit.x + hit.w || y > hit.y + hit.h) return false;
+    if (juice) juice.floatText(event.clientX, event.clientY - 10, i18n.t('design.purr'), 'gold');
+    audio.playSpawn();
+    var now = performance.now();
+    if (now < catNext) return true;
+    catNext = now + 7000;
+    var coins = Math.max(4, Math.round(incomePerSec() * 1.5));
+    state.money = Math.min(MAX_MONEY, state.money + coins);
+    if (state.quest.type === 'earn') state.quest.progress += coins;
+    audio.playCoin();
+    if (juice) juice.floatText(event.clientX, event.clientY - 28, '+' + formatCompact(coins) + ' 💰', 'gold');
+    renderHud();
+    save();
+    return true;
+  }
+
   function frame(now) {
     if (!running) return;
     var dt = Math.min(0.25, Math.max(0, (now - frame.last) / 1000));
     frame.last = now;
     animTime += dt;
+    var bucket = Math.floor(animTime / 3);
+    if (bucket !== hintBucket) {
+      hintBucket = bucket;
+      if (bucket > 0) winkPairs();
+    }
     if (warningLeft > 0) stepWarning(dt);
     else simulate(dt);
     if (juice) juice.step(dt);
@@ -1489,6 +2043,7 @@
       lang: $('btn-lang'),
       langCode: $('lang-code'),
       sheet: $('sheet'),
+      overlay: $('sheet-overlay'),
       sheetTitle: $('sheet-title'),
       sheetScroll: $('sheet-scroll'),
       toasts: $('toasts'),
@@ -1504,7 +2059,23 @@
       energyDismiss: $('btn-energy-dismiss'),
       drone: $('drone'),
       warning: $('stage-warning'),
-      codex: $('btn-codex')
+      codex: $('btn-codex'),
+      ordersList: $('orders-list'),
+      ordersKicker: $('orders-kicker'),
+      ordersPrestige: $('orders-prestige'),
+      inspire: $('inspire'),
+      inspireFill: $('inspire-fill'),
+      inspireLabel: $('inspire-label'),
+      eventBanner: $('event-banner'),
+      eventTitle: $('event-title'),
+      eventCopy: $('event-copy'),
+      eventTimer: $('event-timer'),
+      fuse: $('fuse-box'),
+      styleModal: $('style-modal'),
+      styleTitle: $('style-title'),
+      styleLead: $('style-lead'),
+      styleChoices: $('style-choices'),
+      merge: document.querySelector('.merge')
     };
     nodes.grid.textContent = '';
     cells = [];
@@ -1548,18 +2119,25 @@
       watchAd('drone');
     });
     nodes.codex.addEventListener('click', function () {
+      if (openTab) closeSheet();
       if (juice) juice.openCodex();
     });
     nodes.claim.addEventListener('click', function () {
       touched = true;
       claimQuest();
     });
-    nodes.roomSection.addEventListener('click', function () {
+    nodes.roomSection.addEventListener('click', function (event) {
+      if (event.target.closest && event.target.closest('.zone-pin, .fuse-box')) return;
       touched = true;
       if (openTab) {
         closeSheet();
         return;
       }
+      if (!nodes.styleModal.hidden) {
+        closeStyle();
+        return;
+      }
+      if (pokeCat(event)) return;
       nodes.roomSection.classList.remove('is-tap');
       void nodes.roomSection.offsetWidth;
       nodes.roomSection.classList.add('is-tap');
@@ -1567,10 +2145,32 @@
       audio.playSpawn();
       renderHud();
     });
+    ZONE_IDS.forEach(function (id) {
+      var pin = $('zone-' + id);
+      pin.addEventListener('click', function (event) {
+        event.stopPropagation();
+        touched = true;
+        openStyle(id);
+      });
+    });
+    nodes.fuse.addEventListener('click', function (event) {
+      event.stopPropagation();
+      touched = true;
+      tapFuse();
+    });
+    $('style-close').addEventListener('click', closeStyle);
+    $('style-backdrop').addEventListener('click', closeStyle);
     $('tab-upgrades').addEventListener('click', function () { setTab('upgrades'); });
     $('tab-shop').addEventListener('click', function () { setTab('shop'); });
     $('tab-boosters').addEventListener('click', function () { setTab('boosters'); });
     $('sheet-close').addEventListener('click', closeSheet);
+    $('sheet-backdrop').addEventListener('click', closeSheet);
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape') return;
+      if (!nodes.styleModal.hidden) closeStyle();
+      else if (openTab) closeSheet();
+      else if (juice) juice.closeCodex();
+    });
     nodes.sound.addEventListener('click', function () {
       audio.toggleMuted();
       state.muted = audio.userMuted;
@@ -1598,7 +2198,7 @@
         drawRoom(animTime);
         drawBoard(animTime);
       });
-      observer.observe(nodes.room.parentElement);
+      observer.observe(nodes.roomSection);
       observer.observe(nodes.grid);
     }
     document.addEventListener('visibilitychange', function () {
@@ -1606,7 +2206,7 @@
     });
     window.addEventListener('pagehide', save);
     juice = window.AureliaJuice.mount({
-      stage: document.querySelector('.stage'),
+      stage: document.getElementById('app'),
       app: document.getElementById('app'),
       cells: CELLS,
       i18n: i18n,
@@ -1665,4 +2265,124 @@
   }
 
   window.AureliaGame = { start: start };
+
+  function qaMerge() {
+    var best = 99;
+    var first = -1;
+    var second = -1;
+    for (var i = 0; i < CELLS; i += 1) {
+      var level = state.grid[i];
+      if (!level || level >= 15 || level > best) continue;
+      for (var j = i + 1; j < CELLS; j += 1) {
+        if (state.grid[j] === level) {
+          best = level;
+          first = i;
+          second = j;
+          break;
+        }
+      }
+    }
+    if (first < 0) return false;
+    return mergeAt(first, second);
+  }
+
+  function qaDeliver() {
+    var map = claimMap();
+    var cards = document.querySelectorAll('.order-card');
+    for (var i = 0; i < state.orders.length; i += 1) {
+      if (!map[state.orders[i].uid]) continue;
+      deliverOrder(state.orders[i].uid, cards[i] || document.body);
+      return true;
+    }
+    return false;
+  }
+
+  function qaBuy() {
+    if (openTab !== 'upgrades') setTab('upgrades');
+    var buttons = document.querySelectorAll('#sheet .buy');
+    var bought = false;
+    for (var i = 0; i < buttons.length; i += 1) {
+      if (buttons[i].dataset.maxed === '1' || buttons[i].classList.contains('is-broke')) continue;
+      buttons[i].click();
+      bought = true;
+      break;
+    }
+    if (openTab) closeSheet();
+    return bought;
+  }
+
+  function qaLeap() {
+    var peak = discoveredMax();
+    if (peak < 15) {
+      var spots = [];
+      for (var i = 0; i < CELLS; i += 1) if (state.grid[i] === peak) spots.push(i);
+      while (spots.length < 2) {
+        var hole = -1;
+        for (var h = 0; h < CELLS; h += 1) {
+          if (!state.grid[h]) { hole = h; break; }
+        }
+        if (hole < 0) {
+          for (var k = 0; k < CELLS; k += 1) {
+            if (state.grid[k] && state.grid[k] < peak) {
+              state.grid[k] = 0;
+              hole = k;
+              break;
+            }
+          }
+        }
+        if (hole < 0) break;
+        state.grid[hole] = peak;
+        spots.push(hole);
+      }
+      if (spots.length >= 2) mergeAt(spots[0], spots[1]);
+    }
+    var rent = null;
+    for (var b = 0; b < BRANCHES.length; b += 1) if (BRANCHES[b].id === 'rent') rent = BRANCHES[b];
+    if (rent && state.upgrades.rent < rent.max) {
+      var price = priceOf(rent, state.upgrades.rent);
+      if (state.money < price) state.money = price;
+    }
+    qaBuy();
+    renderBoard();
+    renderHud();
+    drawRoom(animTime);
+  }
+
+  window.AureliaQAHooks = {
+    hardPaused: hardPaused,
+    snapshot: function () {
+      return {
+        grid: state.grid.slice(),
+        money: state.money,
+        crystals: state.crystals,
+        energy: Math.floor(state.energy),
+        max: discoveredMax(),
+        tier: art.visualTier(discoveredMax(), state.upgrades.rent),
+        orders: state.orders.length
+      };
+    },
+    drive: function (fn) {
+      if (hardPaused()) return false;
+      qaDrive = true;
+      var result = false;
+      try { result = fn(); } finally { qaDrive = false; }
+      return result;
+    },
+    spawn: function () {
+      if (hardPaused()) return false;
+      qaDrive = true;
+      try {
+        if (state.energy < 1) state.energy = Math.min(ENERGY_MAX, state.energy + 1);
+        var before = state.grid.join(',');
+        spawnPiece();
+        return state.grid.join(',') !== before;
+      } finally {
+        qaDrive = false;
+      }
+    },
+    merge: qaMerge,
+    deliver: qaDeliver,
+    buy: qaBuy,
+    leap: qaLeap
+  };
 })();

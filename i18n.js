@@ -21,6 +21,60 @@
         completeDesc: 'Все заказы закрыты. Квартира сияет.',
         progress: '{current} / {target}'
       },
+      orders: {
+        kicker: 'Заказы',
+        client: 'Клиент · {room}',
+        wait: 'Ждёт «{name}», ур. {level}',
+        pay: '+{income} к доходу',
+        done: 'Коллекция собрана',
+        all: 'Пентхаус укомплектован',
+        estimate: 'Смета',
+        rate: 'Сейчас {value}',
+        live: 'Капает каждую секунду',
+        vip: 'VIP-заказчик',
+        vipHint: 'Нажмите дрон, чтобы принять'
+      },
+      clients: {
+        kirill: { name: 'Кирилл', role: 'IT-стример' },
+        sofia: { name: 'София', role: 'фуд-блогер' },
+        viktor: { name: 'Виктор', role: 'инвестор' },
+        alina: { name: 'Алина', role: 'галеристка' },
+        mark: { name: 'Марк', role: 'архитектор' },
+        lera: { name: 'Лера', role: 'флорист' }
+      },
+      design: {
+        orders: 'VIP-заказы',
+        prestige: 'Престиж +{pct}%',
+        need: 'Нужен предмет Ур. {a} + Ур. {b}',
+        submit: 'Сдать проект!',
+        reward: '+{money} 💰, +{crystals} 💎, +{pct}% к престижу',
+        waiting: 'Соберите предметы на поле',
+        floor: 'Пол и стены',
+        window: 'Панорамное окно',
+        soft: 'Мягкая зона',
+        light: 'Освещение',
+        tech: 'Техника и декор',
+        scandi: 'Скандинавский уют',
+        loft: 'Индустриальный лофт',
+        lux: 'Золотой нео-люкс',
+        styleTitle: '{zone}',
+        styleLead: 'Выберите стиль. Комната перерисуется сразу.',
+        stylePrice: 'Прокачать за {price}',
+        styleMax: 'Сменить стиль за {price}',
+        inspire: 'Вдохновение',
+        fever: '🔥 ДИЗАЙН-ФОРСАЖ!',
+        feverLeft: '{sec} с',
+        saleTitle: '📦 Срочная распродажа стройматериалов',
+        saleCopy: 'Скидка 50% на прокачку!',
+        surgeTitle: '⚡ Короткое замыкание на объекте',
+        surgeCopy: 'Быстро нажмите щиток 10 раз: {have}/10. В сундуке редкий предмет!',
+        eventLeft: '{sec} с',
+        rareChest: 'Сундук: {name}',
+        rareGold: 'Поле полно. Сундук стал монетами: +{amount}',
+        zoneDone: 'Зона обновлена: {style}',
+        delivered: '{name} принял проект',
+        purr: 'Мррр'
+      },
       nav: {
         upgrades: 'Прокачка',
         shop: 'Магазин',
@@ -34,7 +88,8 @@
       grid: {
         title: 'Мастерская',
         count: '{filled} / {total}',
-        cell: 'Ячейка {n}'
+        cell: 'Ячейка {n}',
+        rank: 'Ур. {n}'
       },
       album: {
         title: 'Альбом интерьера',
@@ -64,7 +119,8 @@
       shop: {
         packs: 'Сейф и витрина',
         payMoney: 'Купить за {price}',
-        payCrystals: 'Купить за {price} крист.'
+        payCrystals: 'Купить за {price} крист.',
+        verb: 'Купить'
       },
       boost: {
         optional: 'Реклама необязательна. Квартиру можно собрать и без неё.',
@@ -131,7 +187,7 @@
           blurb: 'Велюр, столик и место, куда хочется сесть.'
         },
         4: {
-          name: 'Рабочий лофт',
+          name: 'Дизайнерский лофт',
           blurb: 'Два экрана днём, кинотеатр вечером.'
         },
         5: {
@@ -139,7 +195,7 @@
           blurb: 'Камин, рояль и свет, который стоит дорого.'
         },
         6: {
-          name: 'Элитный пентхаус',
+          name: 'Небесный пентхаус',
           blurb: 'Ночной город, джакузи и золотой ключ от крыши.'
         }
       },
@@ -245,6 +301,7 @@
         level: 'Ур. {level}/{max}',
         buy: 'Купить · {price}',
         buyGems: 'Купить · {price} крист.',
+        verb: 'Купить',
         maxed: 'Максимум',
         base: {
           name: 'Уровень поставки',
@@ -443,6 +500,60 @@
         completeDesc: 'Every brief is closed. The flat is shining.',
         progress: '{current} / {target}'
       },
+      orders: {
+        kicker: 'Orders',
+        client: 'Client · {room}',
+        wait: 'Wants “{name}”, lv {level}',
+        pay: '+{income} income',
+        done: 'Collection complete',
+        all: 'Penthouse is furnished',
+        estimate: 'Estimate',
+        rate: 'Now {value}',
+        live: 'Pays every second',
+        vip: 'VIP client',
+        vipHint: 'Tap the drone to accept'
+      },
+      clients: {
+        kirill: { name: 'Kirill', role: 'IT streamer' },
+        sofia: { name: 'Sofia', role: 'food blogger' },
+        viktor: { name: 'Viktor', role: 'investor' },
+        alina: { name: 'Alina', role: 'gallerist' },
+        mark: { name: 'Mark', role: 'architect' },
+        lera: { name: 'Lera', role: 'florist' }
+      },
+      design: {
+        orders: 'VIP orders',
+        prestige: 'Prestige +{pct}%',
+        need: 'Needs item Lv {a} + Lv {b}',
+        submit: 'Deliver the project!',
+        reward: '+{money} 💰, +{crystals} 💎, +{pct}% prestige',
+        waiting: 'Merge these pieces onto the board',
+        floor: 'Floor and walls',
+        window: 'Panoramic window',
+        soft: 'Lounge',
+        light: 'Lighting',
+        tech: 'Tech and decor',
+        scandi: 'Scandinavian cozy',
+        loft: 'Industrial loft',
+        lux: 'Golden neo-luxe',
+        styleTitle: '{zone}',
+        styleLead: 'Pick a style. The room repaints at once.',
+        stylePrice: 'Upgrade for {price}',
+        styleMax: 'Restyle for {price}',
+        inspire: 'Inspiration',
+        fever: '🔥 DESIGN OVERDRIVE!',
+        feverLeft: '{sec}s',
+        saleTitle: '📦 Urgent materials sale',
+        saleCopy: '50% off every upgrade!',
+        surgeTitle: '⚡ Short circuit on site',
+        surgeCopy: 'Tap the fuse box 10 times: {have}/10. A rare chest is the prize!',
+        eventLeft: '{sec}s',
+        rareChest: 'Chest: {name}',
+        rareGold: 'Board is full. The chest became coins: +{amount}',
+        zoneDone: 'Zone updated: {style}',
+        delivered: '{name} accepted the project',
+        purr: 'Purr'
+      },
       nav: {
         upgrades: 'Upgrades',
         shop: 'Shop',
@@ -456,7 +567,8 @@
       grid: {
         title: 'Workshop',
         count: '{filled} / {total}',
-        cell: 'Cell {n}'
+        cell: 'Cell {n}',
+        rank: 'Lv {n}'
       },
       album: {
         title: 'Interior album',
@@ -486,7 +598,8 @@
       shop: {
         packs: 'Safe and showcase',
         payMoney: 'Buy for {price}',
-        payCrystals: 'Buy for {price} crystals'
+        payCrystals: 'Buy for {price} crystals',
+        verb: 'Buy'
       },
       boost: {
         optional: 'Ads are optional. The flat can be finished without them.',
@@ -553,7 +666,7 @@
           blurb: 'Velvet, a table, and a seat worth staying for.'
         },
         4: {
-          name: 'Work loft',
+          name: 'Designer loft',
           blurb: 'Two screens by day, a cinema by night.'
         },
         5: {
@@ -561,7 +674,7 @@
           blurb: 'A fireplace, a piano, and light that costs something.'
         },
         6: {
-          name: 'Elite penthouse',
+          name: 'Sky penthouse',
           blurb: 'The night city, a jacuzzi, and a golden key to the roof.'
         }
       },
@@ -667,6 +780,7 @@
         level: 'Lv {level}/{max}',
         buy: 'Buy · {price}',
         buyGems: 'Buy · {price} gems',
+        verb: 'Buy',
         maxed: 'Maxed',
         base: {
           name: 'Delivery level',

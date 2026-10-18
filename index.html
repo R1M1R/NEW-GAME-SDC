@@ -13,8 +13,8 @@
 </head>
 <body>
   <div class="app" id="app">
-    <header class="topbar">
-      <div class="brand-row">
+    <div class="col col-left">
+      <header class="brand-block">
         <div class="brand">
           <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
             <rect x="4" y="4" width="56" height="56" rx="14" fill="#2a211a" stroke="#e4b15a" stroke-width="2"/>
@@ -27,42 +27,30 @@
             <p class="brand-tag" data-i18n="meta.tagline">От черновой студии до пентхауса</p>
           </div>
         </div>
-        <div class="currencies">
-          <div class="pill pill-money" id="pill-money">
-            <svg viewBox="0 0 32 32" aria-hidden="true">
-              <circle cx="16" cy="16" r="12" fill="#e4b15a"/>
-              <circle cx="16" cy="16" r="8" fill="none" stroke="#8a5a22" stroke-width="2"/>
-              <path d="M16 9 V23 M12 13 H18.5 a3 3 0 0 1 0 6 H12" fill="none" stroke="#8a5a22" stroke-width="1.7" stroke-linecap="round"/>
-            </svg>
-            <span>
-              <small data-i18n="currency.money">Деньги</small>
-              <b id="money-value">0</b>
-            </span>
-          </div>
-          <div class="pill pill-crystal" id="pill-crystal">
-            <svg viewBox="0 0 32 32" aria-hidden="true">
-              <path d="M16 3 L26 12 L16 29 L6 12Z" fill="#7fd0d8"/>
-              <path d="M16 3 L20 12 L16 29 L12 12Z" fill="#d9fbff" opacity="0.85"/>
-            </svg>
-            <span>
-              <small data-i18n="currency.crystals">Кристаллы</small>
-              <b id="crystal-value">0</b>
-            </span>
-          </div>
-          <div class="pill pill-income" id="pill-income">
-            <svg viewBox="0 0 32 32" aria-hidden="true">
-              <path d="M8 22 L16 8 L24 22" fill="none" stroke="#8eae86" stroke-width="2.4" stroke-linejoin="round"/>
-              <path d="M11 18 H21" stroke="#8eae86" stroke-width="2"/>
-            </svg>
-            <span>
-              <small data-i18n="currency.income">Доход</small>
-              <b id="income-value">0/с</b>
-            </span>
-            <em class="boost-badge" id="boost-badge" data-i18n="currency.boost">×2</em>
-          </div>
+      </header>
+      <section class="room" aria-labelledby="room-name">
+        <canvas id="room-canvas" aria-hidden="true"></canvas>
+        <div class="zone-layer" id="zone-layer">
+          <button type="button" class="zone-pin" data-zone="window" id="zone-window"><b data-i18n="design.window">Панорамное окно</b><em>0</em></button>
+          <button type="button" class="zone-pin" data-zone="light" id="zone-light"><b data-i18n="design.light">Освещение</b><em>0</em></button>
+          <button type="button" class="zone-pin" data-zone="soft" id="zone-soft"><b data-i18n="design.soft">Мягкая зона</b><em>0</em></button>
+          <button type="button" class="zone-pin" data-zone="tech" id="zone-tech"><b data-i18n="design.tech">Техника и декор</b><em>0</em></button>
+          <button type="button" class="zone-pin" data-zone="floor" id="zone-floor"><b data-i18n="design.floor">Пол и стены</b><em>0</em></button>
         </div>
-      </div>
-      <div class="quest" id="quest">
+        <button type="button" id="fuse-box" class="fuse-box" hidden>⚡</button>
+        <div class="room-caption">
+          <h1 class="room-name" id="room-name">Черновая студия</h1>
+          <p class="room-blurb" id="room-blurb">Голый бетон, коробки и первое ведро краски.</p>
+        </div>
+      </section>
+      <section class="orders" id="orders" aria-labelledby="orders-kicker">
+        <div class="orders-head">
+          <span class="orders-kicker" id="orders-kicker" data-i18n="design.orders">VIP-заказы</span>
+          <span class="orders-prestige" id="orders-prestige">Престиж +0%</span>
+        </div>
+        <div class="orders-list" id="orders-list"></div>
+      </section>
+      <section class="quest" id="quest">
         <div class="quest-row">
           <span class="quest-kicker" id="quest-kicker" data-i18n="quest.kicker">Квест</span>
           <span class="quest-title" id="quest-title">Первая смета</span>
@@ -72,53 +60,80 @@
           <div class="quest-fill" id="quest-fill"></div>
         </div>
         <button type="button" id="quest-claim" class="quest-claim" hidden>Забрать награду</button>
-      </div>
-    </header>
-
-    <main class="stage">
-      <button type="button" id="drone" class="drone" hidden data-ad-button="drone">🚁 Золотой дрон · VIP-заказчик 🎬</button>
-      <div id="stage-warning" class="stage-warning" hidden></div>
-      <section class="room" aria-labelledby="room-name">
-        <canvas id="room-canvas" aria-hidden="true"></canvas>
-        <div class="room-caption">
-          <h1 class="room-name" id="room-name">Черновая студия</h1>
-          <p class="room-blurb" id="room-blurb">Голый бетон, коробки и первое ведро краски.</p>
-        </div>
       </section>
+    </div>
+
+    <div class="col col-right">
+      <div class="currencies">
+        <div class="pill pill-money" id="pill-money">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <circle cx="16" cy="16" r="12" fill="#e4b15a"/>
+            <circle cx="16" cy="16" r="8" fill="none" stroke="#8a5a22" stroke-width="2"/>
+            <path d="M16 9 V23 M12 13 H18.5 a3 3 0 0 1 0 6 H12" fill="none" stroke="#8a5a22" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+          <span>
+            <small data-i18n="currency.money">Деньги</small>
+            <b id="money-value">0</b>
+          </span>
+        </div>
+        <div class="pill pill-crystal" id="pill-crystal">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M16 3 L26 12 L16 29 L6 12Z" fill="#7fd0d8"/>
+            <path d="M16 3 L20 12 L16 29 L12 12Z" fill="#d9fbff" opacity="0.85"/>
+          </svg>
+          <span>
+            <small data-i18n="currency.crystals">Кристаллы</small>
+            <b id="crystal-value">0</b>
+          </span>
+        </div>
+        <div class="pill pill-income" id="pill-income">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M8 22 L16 8 L24 22" fill="none" stroke="#8eae86" stroke-width="2.4" stroke-linejoin="round"/>
+            <path d="M11 18 H21" stroke="#8eae86" stroke-width="2"/>
+          </svg>
+          <span>
+            <small data-i18n="currency.income">Доход</small>
+            <b id="income-value">0/с</b>
+          </span>
+          <em class="boost-badge" id="boost-badge" data-i18n="currency.boost">×2</em>
+        </div>
+      </div>
+      <div class="spawn-row">
+        <button type="button" id="btn-spawn" class="spawn-btn">
+          <span data-i18n="play.spawn">Поставка</span>
+          <strong id="spawn-count">15/15</strong>
+        </button>
+        <div class="energy-track" aria-hidden="true"><div id="energy-fill"></div></div>
+      </div>
+      <div class="inspire" id="inspire">
+        <div class="inspire-track" aria-hidden="true"><div id="inspire-fill"></div></div>
+        <span id="inspire-label" data-i18n="design.inspire">Вдохновение</span>
+      </div>
+      <div class="offer-row">
+        <div class="offer-col">
+          <button type="button" id="btn-x2" class="offer-btn" data-ad-button="x2">
+            <span id="x2-label">🔥 Доход x2 на 2 минуты 🎬</span>
+          </button>
+          <div class="offer-track" aria-hidden="true"><div id="x2-fill"></div></div>
+        </div>
+        <div class="offer-col">
+          <button type="button" id="btn-auto" class="offer-btn" data-ad-button="auto">
+            <span id="auto-label">🤖 Авто-мерж на 60 секунд за видео 🎬</span>
+          </button>
+          <div class="offer-track" aria-hidden="true"><div id="auto-fill"></div></div>
+        </div>
+      </div>
       <section class="merge" aria-labelledby="merge-title">
         <div class="merge-head">
           <h2 class="merge-title" id="merge-title" data-i18n="grid.title">Мастерская</h2>
           <button type="button" id="btn-codex" class="codex-btn" data-i18n="monetize.codex">Коллекция</button>
           <span class="merge-count" id="grid-count">0 / 20</span>
         </div>
-        <div class="spawn-row">
-          <button type="button" id="btn-spawn" class="spawn-btn">
-            <span data-i18n="play.spawn">Поставка</span>
-            <strong id="spawn-count">15/15</strong>
-          </button>
-          <div class="energy-track" aria-hidden="true"><div id="energy-fill"></div></div>
-        </div>
-        <div class="offer-row">
-          <div class="offer-col">
-            <button type="button" id="btn-x2" class="offer-btn" data-ad-button="x2">
-              <span id="x2-label">🔥 Доход x2 на 2 минуты 🎬</span>
-            </button>
-            <div class="offer-track" aria-hidden="true"><div id="x2-fill"></div></div>
-          </div>
-          <div class="offer-col">
-            <button type="button" id="btn-auto" class="offer-btn" data-ad-button="auto">
-              <span id="auto-label">🤖 Авто-мерж на 60 секунд за видео 🎬</span>
-            </button>
-            <div class="offer-track" aria-hidden="true"><div id="auto-fill"></div></div>
-          </div>
-        </div>
         <div class="merge-board">
           <div class="merge-grid" id="merge-grid" role="grid" aria-rowcount="4" aria-colcount="5"></div>
         </div>
       </section>
-    </main>
-
-    <nav class="dock" aria-label="Aurelia">
+      <nav class="dock" aria-label="Aurelia">
       <div class="tabs" role="tablist">
         <button type="button" id="tab-upgrades" role="tab" aria-selected="false" aria-controls="sheet" data-tab="upgrades">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16 L10 10 L13 13 L20 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 6 H20 V12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -144,9 +159,33 @@
           <span id="lang-code">RU</span>
         </button>
       </div>
-    </nav>
+      </nav>
+    </div>
 
-    <section class="sheet" id="sheet" role="tabpanel" aria-hidden="true" hidden inert>
+    <button type="button" id="drone" class="drone" hidden data-ad-button="drone">🚁 Золотой дрон · VIP-заказчик 🎬</button>
+    <div id="event-banner" class="event-banner" hidden>
+      <strong id="event-title"></strong>
+      <p id="event-copy"></p>
+      <em id="event-timer"></em>
+    </div>
+    <div id="style-modal" class="style-modal" hidden>
+      <button type="button" class="overlay-backdrop" id="style-backdrop" data-i18n-aria="nav.close" aria-label="Закрыть панель"></button>
+      <div class="style-card" role="dialog" aria-modal="true" aria-labelledby="style-title">
+        <div class="sheet-bar">
+          <h2 class="sheet-title" id="style-title">Стиль</h2>
+          <button type="button" class="sheet-close" id="style-close" data-i18n-aria="nav.close" aria-label="Закрыть панель">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6 L18 18 M18 6 L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <p class="sheet-note" id="style-lead" data-i18n="design.styleLead">Выберите стиль. Комната перерисуется сразу.</p>
+        <div class="style-choices" id="style-choices"></div>
+      </div>
+    </div>
+    <div id="stage-warning" class="stage-warning" hidden></div>
+
+    <div class="sheet-overlay" id="sheet-overlay" hidden inert>
+      <button type="button" class="overlay-backdrop" id="sheet-backdrop" data-i18n-aria="nav.close" aria-label="Закрыть панель"></button>
+      <section class="sheet" id="sheet" role="tabpanel" aria-hidden="true">
       <div class="sheet-bar">
         <h2 class="sheet-title" id="sheet-title">Прокачка</h2>
         <button type="button" class="sheet-close" id="sheet-close" data-i18n-aria="nav.close" aria-label="Закрыть панель">
@@ -154,7 +193,8 @@
         </button>
       </div>
       <div class="sheet-scroll" id="sheet-scroll"></div>
-    </section>
+      </section>
+    </div>
 
     <div class="toasts" id="toasts" aria-live="polite"></div>
     <div id="energy-offer" class="energy-offer" hidden>
@@ -170,5 +210,6 @@
   <script src="juice.js"></script>
   <script src="game.js"></script>
   <script src="sdk.js"></script>
+  <script src="auto-qa.js"></script>
 </body>
 </html>

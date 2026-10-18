@@ -650,129 +650,348 @@
     return 0;
   }
 
-  var ROOM_LOOKS = [
-    { wall: ['#8e877f', '#5e5852'], floor: '#6a4e3a', plank: '#4e3828', sky: ['#8aa0ad', '#d5e0e6'], frame: '#5c5148', win: [0.33, 0.1, 0.34, 0.28], floorY: 0.66, crack: true, concrete: true },
-    { wall: ['#efe6d8', '#d9cbb8'], floor: '#e0c194', plank: '#c49a62', sky: ['#8eb7d8', '#f3ddb0'], frame: '#f6efe4', win: [0.28, 0.08, 0.44, 0.34], floorY: 0.64 },
-    { wall: ['#f0d2ae', '#e2b488'], floor: '#c98a52', plank: '#a86e38', sky: ['#7eafd4', '#ffd59a'], frame: '#f6e2c4', win: [0.24, 0.08, 0.5, 0.36], floorY: 0.63, rug: '#9a4038' },
-    { wall: ['#ead4be', '#d2b497'], floor: '#b98356', plank: '#8d623c', sky: ['#89b4d2', '#f6d7a8'], frame: '#f3e6d2', win: [0.18, 0.07, 0.58, 0.38], floorY: 0.62, rug: '#6e3144', curtain: '#c4564a' },
-    { wall: ['#d9c2aa', '#b99678'], floor: '#8a5538', plank: '#643c28', sky: ['#6a9cbc', '#f0c48a'], frame: '#f0d7a2', win: [0.08, 0.08, 0.46, 0.34], floorY: 0.62, brick: true, curtain: '#6e8f86' },
-    { wall: ['#e7d3c0', '#c9ae92'], floor: '#d2ae78', plank: '#b08a52', sky: ['#24344a', '#c98a62'], frame: '#f6efe4', win: [0.12, 0.06, 0.58, 0.4], floorY: 0.6, night: true, curtain: '#8a5a6a' },
-    { wall: ['#14343c', '#0c2228'], floor: '#d9d3c7', sky: ['#07141c', '#1b4a58'], frame: '#f0d7a2', win: [0.06, 0.04, 0.88, 0.52], floorY: 0.58, night: true, marble: true }
-  ];
-
-  function decorFor(maxLevel) {
-    var list = [];
-    if (maxLevel >= 4) list.push({ level: 4, x: 0.06, foot: 0.93, s: 0.32 });
-    if (maxLevel >= 7) list.push({ level: 7, x: 0.22, foot: 0.9, s: 0.4 });
-    if (maxLevel >= 3) list.push({ level: 3, x: 0.74, foot: 0.9, s: 0.34 });
-    if (maxLevel >= 12 && maxLevel < 15) list.push({ level: 12, x: 0.02, foot: 0.92, s: 0.36 });
-    if (maxLevel >= 13) list.push({ level: 13, x: 0.6, foot: 0.97, s: 0.34 });
-    if (maxLevel >= 11 && maxLevel < 14) list.push({ level: 11, x: 0.34, foot: 0.95, s: 0.36 });
-    if (maxLevel >= 15) list.push({ level: 15, x: 0.4, foot: 0.78, s: 0.26 });
-    var hero = Math.max(1, maxLevel);
-    var crowded = false;
-    for (var i = 0; i < list.length; i += 1) if (list[i].level === hero) crowded = true;
-    if (!crowded) list.push({ level: hero, x: hero >= 8 ? 0.4 : 0.12, foot: 0.94, s: hero >= 9 ? 0.42 : 0.36 });
-    return list;
-  }
-
-  function paintCracks(ctx, w, h) {
-    ctx.strokeStyle = 'rgba(40, 32, 28, 0.38)';
-    ctx.lineWidth = Math.max(1.5, w * 0.004);
+  function quad(ctx, pts) {
     ctx.beginPath();
-    ctx.moveTo(w * 0.16, h * 0.12);
-    ctx.lineTo(w * 0.2, h * 0.24);
-    ctx.lineTo(w * 0.14, h * 0.34);
-    ctx.moveTo(w * 0.78, h * 0.16);
-    ctx.lineTo(w * 0.74, h * 0.28);
-    ctx.stroke();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (var i = 1; i < pts.length; i += 1) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.closePath();
   }
 
-  function paintSkyline(ctx, x, y, w, h, time, night) {
-    var base = y + h * 0.74;
-    var widths = [0.12, 0.16, 0.1, 0.18, 0.13, 0.15];
-    var heights = [0.26, 0.48, 0.2, 0.6, 0.34, 0.42];
-    var cursor = x + w * 0.03;
+  function mixHex(a, b, t) {
+    var u = Math.max(0, Math.min(1, t));
+    function ch(hex, i) { return parseInt(hex.substr(1 + i * 2, 2), 16); }
+    function hex2(n) {
+      var s = Math.round(n).toString(16);
+      return s.length < 2 ? '0' + s : s;
+    }
+    var r = ch(a, 0) + (ch(b, 0) - ch(a, 0)) * u;
+    var g = ch(a, 1) + (ch(b, 1) - ch(a, 1)) * u;
+    var bl = ch(a, 2) + (ch(b, 2) - ch(a, 2)) * u;
+    return '#' + hex2(r) + hex2(g) + hex2(bl);
+  }
+
+  function skyPhase(time) {
+    var p = ((time || 0) % 42) / 42;
+    var keys = [
+      { at: 0, top: '#8ec8f0', bot: '#fff4d2', night: 0, sun: 0.72 },
+      { at: 0.28, top: '#7eb6ea', bot: '#ffe7b0', night: 0, sun: 0.62 },
+      { at: 0.4, top: '#ff8f73', bot: '#ffd0a0', night: 0.25, sun: 0.42 },
+      { at: 0.5, top: '#3a2a55', bot: '#e07a62', night: 0.72, sun: 0.18 },
+      { at: 0.62, top: '#0c1428', bot: '#1d3558', night: 1, sun: 0 },
+      { at: 0.86, top: '#101828', bot: '#24385c', night: 0.92, sun: 0.04 },
+      { at: 1, top: '#8ec8f0', bot: '#fff4d2', night: 0, sun: 0.72 }
+    ];
+    var i = 0;
+    while (i < keys.length - 2 && p > keys[i + 1].at) i += 1;
+    var a = keys[i];
+    var b = keys[i + 1];
+    var t = (p - a.at) / Math.max(0.001, b.at - a.at);
+    return {
+      top: mixHex(a.top, b.top, t),
+      bot: mixHex(a.bot, b.bot, t),
+      night: a.night + (b.night - a.night) * t,
+      sun: a.sun + (b.sun - a.sun) * t
+    };
+  }
+
+  function zoneStyle(model, id) {
+    var zone = model && model.zones && model.zones[id];
+    if (!zone) return 0;
+    return zone.style | 0;
+  }
+
+  function roomShell(w, h) {
+    var x0 = w * 0.16;
+    var x1 = w * 0.84;
+    var y0 = h * 0.2;
+    var y1 = h * 0.7;
+    return {
+      x0: x0, x1: x1, y0: y0, y1: y1,
+      ceiling: [[0, 0], [w, 0], [x1, y0], [x0, y0]],
+      left: [[0, 0], [x0, y0], [x0, y1], [0, h]],
+      right: [[w, 0], [x1, y0], [x1, y1], [w, h]],
+      back: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]],
+      floor: [[x0, y1], [x1, y1], [w, h], [0, h]]
+    };
+  }
+
+  function paintSky(ctx, x, y, w, h, sky, time) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    ctx.fillStyle = linear(ctx, x, y, x, y + h, [[0, sky.top], [1, sky.bot]]);
+    ctx.fillRect(x, y, w, h);
+    if (sky.sun > 0.05) {
+      ctx.fillStyle = 'rgba(255, 244, 210, ' + sky.sun + ')';
+      ctx.beginPath();
+      ctx.arc(x + w * 0.72, y + h * (0.28 + (1 - sky.sun) * 0.35), Math.max(8, w * 0.08), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (sky.night < 0.55) {
+      ctx.fillStyle = 'rgba(255,255,255,0.72)';
+      for (var c = 0; c < 4; c += 1) {
+        var cx = x + ((time * 18 + c * 90) % (w + 80)) - 40;
+        var cy = y + h * (0.18 + (c % 3) * 0.12);
+        ellipse(ctx, cx, cy, 18 + c * 4, 8);
+        ctx.fill();
+      }
+    }
+    if (sky.night > 0.35) {
+      ctx.globalAlpha = Math.min(1, (sky.night - 0.35) / 0.4);
+      ctx.fillStyle = '#f6f3ea';
+      for (var s = 0; s < 18; s += 1) {
+        var sx = x + ((s * 47) % Math.max(8, w - 6));
+        var sy = y + ((s * 29) % Math.max(8, h * 0.55));
+        ctx.fillRect(sx, sy, s % 4 === 0 ? 2 : 1.2, s % 4 === 0 ? 2 : 1.2);
+      }
+      ctx.globalAlpha = 1;
+    }
+    var base = y + h * 0.78;
+    var cursor = x - 6;
+    var widths = [0.14, 0.1, 0.18, 0.12, 0.16, 0.11, 0.15];
+    var heights = [0.34, 0.5, 0.28, 0.62, 0.4, 0.48, 0.32];
     for (var i = 0; i < widths.length; i += 1) {
       var bw = w * widths[i];
       var bh = h * heights[i];
-      ctx.fillStyle = night ? '#10242c' : 'rgba(64, 78, 90, 0.4)';
-      ctx.fillRect(cursor, base - bh, Math.max(2, bw - 2), bh);
-      if (night) {
-        for (var wy = base - bh + 6; wy < base - 6; wy += 8) {
-          for (var wx = cursor + 3; wx < cursor + bw - 6; wx += 7) {
-            if (((i + wx + wy) | 0) % 3 === 0) continue;
-            var flicker = 0.35 + 0.65 * Math.abs(Math.sin(time * 2.2 + wx * 0.05 + wy));
-            ctx.fillStyle = 'rgba(244, 214, 140, ' + flicker + ')';
-            ctx.fillRect(wx, wy, 2, 2);
+      ctx.fillStyle = sky.night > 0.5 ? '#121a28' : 'rgba(70, 86, 102, 0.55)';
+      ctx.fillRect(cursor, base - bh, bw - 2, bh);
+      if (sky.night > 0.4) {
+        ctx.globalAlpha = sky.night;
+        for (var wy = base - bh + 6; wy < base - 8; wy += 9) {
+          for (var wx = cursor + 4; wx < cursor + bw - 8; wx += 8) {
+            if (((i * 3 + wx + wy) | 0) % 4 === 0) continue;
+            var flick = 0.35 + 0.65 * Math.abs(Math.sin(time * 2 + wx * 0.04 + wy));
+            ctx.fillStyle = 'rgba(255, 214, 140, ' + flick + ')';
+            ctx.fillRect(wx, wy, 2.2, 2.2);
           }
         }
+        ctx.globalAlpha = 1;
       }
       cursor += bw;
     }
+    ctx.restore();
   }
 
-  function paintWindow(ctx, x, y, w, h, look, tier, time) {
-    ctx.fillStyle = linear(ctx, x, y, x, y + h, [[0, look.sky[0]], [1, look.sky[1]]]);
-    ctx.fillRect(x, y, w, h);
-    if (!look.night) {
-      ctx.fillStyle = radial(ctx, x + w * 0.72, y + h * 0.28, 2, w * 0.32, [[0, 'rgba(255,244,210,0.95)'], [1, 'rgba(255,244,210,0)']]);
-      ctx.fillRect(x, y, w, h);
-    } else {
-      ctx.fillStyle = '#f6efe4';
-      ctx.beginPath();
-      ctx.arc(x + w * 0.8, y + h * 0.2, Math.max(3, w * 0.03), 0, Math.PI * 2);
+  function paintFloorPlane(ctx, shell, style, tier) {
+    var marble = style === 3 || (style === 0 && tier >= 6);
+    var loft = style === 2 || (style === 0 && tier === 0);
+    ctx.save();
+    quad(ctx, shell.floor);
+    ctx.clip();
+    if (marble) {
+      ctx.fillStyle = linear(ctx, 0, shell.y1, 0, shell.y1 + 80, [[0, '#f4efe8'], [1, '#c9c2b6']]);
       ctx.fill();
-    }
-    if (tier >= 4) paintSkyline(ctx, x, y, w, h, time, !!look.night);
-    ctx.strokeStyle = look.frame;
-    ctx.lineWidth = Math.max(3, w * 0.03);
-    ctx.strokeRect(x, y, w, h);
-    ctx.beginPath();
-    ctx.moveTo(x + w / 2, y);
-    ctx.lineTo(x + w / 2, y + h);
-    ctx.moveTo(x, y + h * 0.46);
-    ctx.lineTo(x + w, y + h * 0.46);
-    ctx.stroke();
-    if (look.curtain) {
-      ctx.fillStyle = look.curtain;
-      ctx.globalAlpha = 0.92;
-      ctx.fillRect(x - w * 0.04, y, w * 0.12, h * 0.92);
-      ctx.fillRect(x + w * 0.92, y, w * 0.12, h * 0.92);
-      ctx.globalAlpha = 1;
-    }
-  }
-
-  function paintFloor(ctx, w, h, y, look) {
-    if (look.marble) {
-      ctx.fillStyle = linear(ctx, 0, y, w, h, [[0, '#efeae2'], [1, '#c9c3b8']]);
-      ctx.fillRect(0, y, w, h - y);
       ctx.strokeStyle = 'rgba(255,255,255,0.35)';
       ctx.lineWidth = 1;
-      var size = Math.max(16, w * 0.07);
-      for (var yy = y; yy < h; yy += size) {
-        for (var xx = 0; xx < w; xx += size) ctx.strokeRect(xx, yy, size, size);
+      for (var i = 0; i < 8; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(shell.x0 + i * 28, shell.y1);
+        ctx.lineTo(i * 46, 2000);
+        ctx.stroke();
       }
-      return;
+    } else if (loft) {
+      ctx.fillStyle = linear(ctx, 0, shell.y1, 0, 2000, [[0, '#6a625c'], [1, '#3e3834']]);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = style === 1 ? '#e7d3b0' : '#c9955c';
+      ctx.fill();
+      ctx.strokeStyle = style === 1 ? 'rgba(120, 84, 48, 0.35)' : 'rgba(90, 52, 24, 0.4)';
+      ctx.lineWidth = 1.2;
+      for (var row = 0; row < 14; row += 1) {
+        var y = shell.y1 + row * 10;
+        var spread = row * 8;
+        ctx.beginPath();
+        ctx.moveTo(shell.x0 - spread, y);
+        ctx.lineTo(shell.x1 + spread, y);
+        ctx.stroke();
+      }
     }
-    if (look.concrete) {
-      ctx.fillStyle = linear(ctx, 0, y, 0, h, [[0, '#7a6a5c'], [1, '#4e4036']]);
-      ctx.fillRect(0, y, w, h - y);
-      ctx.strokeStyle = 'rgba(30, 24, 20, 0.25)';
-      ctx.strokeRect(w * 0.08, y + 8, w * 0.35, (h - y) * 0.45);
-      return;
-    }
-    ctx.fillStyle = look.floor;
-    ctx.fillRect(0, y, w, h - y);
-    ctx.strokeStyle = look.plank;
-    ctx.lineWidth = Math.max(1, h * 0.004);
-    var plank = Math.max(8, (h - y) / 7);
-    for (var py = y; py < h; py += plank) {
+    ctx.restore();
+    ctx.strokeStyle = tier >= 5 ? '#e4b15a' : 'rgba(246, 239, 228, 0.45)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(0, shell.floor[3][1] - 2);
+    ctx.lineTo(shell.x0, shell.y1);
+    ctx.lineTo(shell.x1, shell.y1);
+    ctx.lineTo(shell.floor[2][0], shell.floor[2][1] - 2);
+    ctx.stroke();
+  }
+
+  function drawRug(ctx, shell, style) {
+    var y = shell.y1 + (shell.floor[3][1] - shell.y1) * 0.18;
+    var h = (shell.floor[3][1] - shell.y1) * 0.62;
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ellipse(ctx, shell.x0 + (shell.x1 - shell.x0) * 0.5 + 8, y + h * 0.72, (shell.x1 - shell.x0) * 0.34, h * 0.16);
+    ctx.fill();
+    var color = style === 3 ? '#6e2144' : style === 2 ? '#5a4034' : style === 1 ? '#d7c4a4' : '#8d3d4a';
+    ctx.fillStyle = color;
+    roundRect(ctx, shell.x0 + 18, y, shell.x1 - shell.x0 - 36, h, 18);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+    ctx.lineWidth = 3;
+    roundRect(ctx, shell.x0 + 26, y + 6, shell.x1 - shell.x0 - 52, h - 12, 14);
+    ctx.stroke();
+  }
+
+  function drawSofa(ctx, shell, style, time) {
+    var x = shell.x0 + 28;
+    var y = shell.y1 - shell.y0 * 0.02;
+    var w = (shell.x1 - shell.x0) * 0.46;
+    var h = (shell.floor[3][1] - shell.y1) * 0.55;
+    var cloth = style === 3 ? '#6e2148' : style === 2 ? '#5c4038' : style === 1 ? '#f2e4d6' : '#7a3048';
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ellipse(ctx, x + w * 0.5, y + h * 0.92, w * 0.42, 8);
+    ctx.fill();
+    ctx.fillStyle = cloth;
+    roundRect(ctx, x, y, w, h * 0.72, 16);
+    ctx.fill();
+    ctx.fillStyle = style === 1 ? '#fff8f2' : 'rgba(255,255,255,0.16)';
+    roundRect(ctx, x + 8, y + 8, w * 0.28, h * 0.36, 8);
+    ctx.fill();
+    roundRect(ctx, x + w * 0.62, y + 10, w * 0.26, h * 0.34, 8);
+    ctx.fill();
+    var bob = Math.sin(time * 1.6) * 1.2;
+    ctx.fillStyle = style === 3 ? '#f0d7a2' : '#efe8e2';
+    ellipse(ctx, x + w * 0.56, y + h * 0.5 + bob, w * 0.16, h * 0.18);
+    ctx.fill();
+    ellipse(ctx, x + w * 0.72, y + h * 0.52, w * 0.07, h * 0.08);
+    ctx.fill();
+    ctx.fillStyle = '#2a2422';
+    ellipse(ctx, x + w * 0.52, y + h * 0.46 + bob, 2.2, 1.6);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('z', x + w * 0.78, y + h * 0.2 + Math.sin(time * 3) * 2);
+  }
+
+  function drawCoffee(ctx, shell) {
+    var cx = (shell.x0 + shell.x1) * 0.62;
+    var y = shell.y1 + 18;
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ellipse(ctx, cx, y + 28, 34, 8);
+    ctx.fill();
+    ctx.fillStyle = '#8a5a32';
+    ctx.fillRect(cx - 4, y + 8, 8, 18);
+    ctx.fillStyle = linear(ctx, cx - 36, y, cx + 36, y + 16, [[0, '#f3e0c4'], [1, '#a87440']]);
+    roundRect(ctx, cx - 36, y, 72, 14, 6);
+    ctx.fill();
+  }
+
+  function drawPlant(ctx, shell, time) {
+    var x = shell.x1 - 8;
+    var y = shell.y1 + 6;
+    var sway = Math.sin(time * 1.4) * 3;
+    ctx.fillStyle = '#d7c3ae';
+    ctx.beginPath();
+    ctx.moveTo(x - 18, y + 8);
+    ctx.lineTo(x - 8, y + 36);
+    ctx.lineTo(x + 10, y + 34);
+    ctx.lineTo(x + 4, y + 6);
+    ctx.fill();
+    ctx.fillStyle = '#1f7a45';
+    function leaf(dx, dy, rot) {
+      ctx.save();
+      ctx.translate(x + dx + sway, y + dy);
+      ctx.rotate(rot);
       ctx.beginPath();
-      ctx.moveTo(0, py);
-      ctx.lineTo(w, py);
-      ctx.stroke();
+      ctx.moveTo(0, 10);
+      ctx.bezierCurveTo(16, 4, 18, -18, 0, -28);
+      ctx.bezierCurveTo(-18, -18, -16, 4, 0, 10);
+      ctx.fill();
+      ctx.restore();
     }
+    leaf(-20, -6, -0.5);
+    leaf(6, -10, 0.4);
+    leaf(-6, -24, 0.05);
+  }
+
+  function drawTorch(ctx, shell, style, time) {
+    var x = shell.x0 + 36;
+    var y = shell.y1 - 8;
+    ctx.strokeStyle = '#d5dde6';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x, y + 46);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.fillStyle = '#e8eef4';
+    ellipse(ctx, x, y + 48, 16, 5);
+    ctx.fill();
+    var glow = style === 3 ? '120, 245, 230' : style === 2 ? '255, 150, 70' : '255, 214, 150';
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = radial(ctx, x, y - 6, 2, 42, [[0, 'rgba(' + glow + ',0.55)'], [1, 'rgba(' + glow + ',0)']]);
+    ctx.beginPath();
+    ctx.arc(x, y - 4, 42, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#f7fbff';
+    roundRect(ctx, x - 16, y - 18, 32, 16, 6);
+    ctx.fill();
+    var pulse = 0.45 + Math.sin(time * 3) * 0.2;
+    ctx.fillStyle = 'rgba(' + glow + ',' + pulse + ')';
+    ctx.fillRect(x - 10, y - 14, 20, 8);
+  }
+
+  function drawChandelier(ctx, shell, style, time) {
+    var cx = (shell.x0 + shell.x1) / 2;
+    var y = shell.y0 + 8;
+    ctx.strokeStyle = style === 3 ? '#e4b15a' : '#d9cbb8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, shell.y0 - 10);
+    ctx.lineTo(cx, y + 16);
+    ctx.stroke();
+    var glow = style === 3 ? '255, 210, 120' : '255, 226, 170';
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = radial(ctx, cx, y + 20, 4, 54, [[0, 'rgba(' + glow + ',0.42)'], [1, 'rgba(' + glow + ',0)']]);
+    ctx.beginPath();
+    ctx.arc(cx, y + 18, 54, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = style === 3 ? '#f0d7a2' : '#f6efe4';
+    for (var i = -1; i <= 1; i += 1) {
+      ctx.beginPath();
+      ctx.arc(cx + i * 16, y + 18 + Math.sin(time * 2 + i) * 1.2, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawFrames(ctx, shell, count) {
+    var frames = [
+      [shell.x0 + 16, shell.y0 + 18, 46, 34],
+      [shell.x1 - 70, shell.y0 + 24, 40, 30]
+    ];
+    for (var i = 0; i < Math.min(count, frames.length); i += 1) {
+      var f = frames[i];
+      ctx.fillStyle = '#f6efe4';
+      ctx.fillRect(f[0] - 3, f[1] - 3, f[2] + 6, f[3] + 6);
+      ctx.fillStyle = i === 0 ? '#7eb6d8' : '#d4724b';
+      ctx.fillRect(f[0], f[1], f[2], f[3]);
+      ctx.strokeStyle = '#e4b15a';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(f[0] - 3, f[1] - 3, f[2] + 6, f[3] + 6);
+    }
+  }
+
+  function drawWorkstation(ctx, shell, style, time) {
+    var x = shell.x1 - 78;
+    var y = shell.y1 + 4;
+    ctx.fillStyle = style === 2 ? '#2a241c' : '#d9cbb8';
+    roundRect(ctx, x, y + 22, 70, 10, 3);
+    ctx.fill();
+    ctx.fillStyle = '#121418';
+    roundRect(ctx, x + 8, y, 24, 20, 2);
+    ctx.fill();
+    roundRect(ctx, x + 36, y + 2, 22, 18, 2);
+    ctx.fill();
+    var shift = (time * 30) % 16;
+    ctx.fillStyle = style === 3 ? '#3dfff0' : '#49b6e8';
+    ctx.fillRect(x + 10 + (shift % 10), y + 4, 8, 12);
+    ctx.fillStyle = '#e4b15a';
+    ctx.fillRect(x + 40, y + 6, 12, 8);
   }
 
   function paintRoom(ctx, w, h, model, time) {
@@ -780,81 +999,114 @@
     var maxLevel = model && model.maxLevel ? model.maxLevel : 0;
     var rentLevel = model && model.rentLevel ? model.rentLevel : 0;
     var tier = visualTier(maxLevel, rentLevel);
-    var look = ROOM_LOOKS[tier];
     var t = time || 0;
-    var floorY = h * look.floorY;
+    var sky = skyPhase(t);
+    var shell = roomShell(w, h);
+    var floorStyle = zoneStyle(model, 'floor');
+    var softStyle = zoneStyle(model, 'soft');
+    var lightStyle = zoneStyle(model, 'light');
+    var techStyle = zoneStyle(model, 'tech');
+    var wall = tier === 0 ? '#8a837c' : tier >= 5 ? '#efe6da' : '#f7f1e8';
+    if (floorStyle === 2) wall = '#c4b2a4';
+    if (floorStyle === 3) wall = '#1c2430';
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = linear(ctx, 0, 0, 0, floorY, [[0, look.wall[0]], [1, look.wall[1]]]);
-    ctx.fillRect(0, 0, w, floorY + 1);
-    if (look.brick) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(w * 0.58, 0, w * 0.42, floorY);
-      ctx.clip();
-      ctx.fillStyle = '#8d5344';
-      ctx.fillRect(w * 0.58, 0, w * 0.42, floorY);
-      ctx.strokeStyle = 'rgba(60, 24, 18, 0.35)';
-      ctx.lineWidth = 2;
-      var bh = Math.max(10, floorY * 0.07);
-      var bw = Math.max(22, w * 0.08);
-      var row = 0;
-      for (var yy = 0; yy < floorY; yy += bh) {
-        for (var xx = w * 0.5 - (row % 2) * bw / 2; xx < w; xx += bw) ctx.strokeRect(xx, yy, bw, bh);
-        row += 1;
-      }
-      ctx.restore();
-    }
-    if (look.crack) paintCracks(ctx, w, h);
+    ctx.fillStyle = linear(ctx, 0, 0, 0, h, [[0, mixHex(wall, '#ffffff', 0.15)], [1, wall]]);
+    ctx.fillRect(0, 0, w, h);
+    quad(ctx, shell.ceiling);
+    ctx.fillStyle = linear(ctx, 0, 0, 0, shell.y0, [[0, mixHex(wall, '#ffffff', 0.28)], [1, wall]]);
+    ctx.fill();
+    quad(ctx, shell.left);
+    ctx.fillStyle = mixHex(wall, '#000000', 0.08);
+    ctx.fill();
+    quad(ctx, shell.right);
+    ctx.fillStyle = mixHex(wall, '#000000', 0.16);
+    ctx.fill();
+    quad(ctx, shell.back);
+    ctx.fillStyle = wall;
+    ctx.fill();
+    var win = {
+      x: shell.x0 + (shell.x1 - shell.x0) * 0.18,
+      y: shell.y0 + 12,
+      w: (shell.x1 - shell.x0) * 0.64,
+      h: (shell.y1 - shell.y0) * 0.62
+    };
+    paintSky(ctx, win.x, win.y, win.w, win.h, sky, t);
+    ctx.strokeStyle = zoneStyle(model, 'window') === 3 ? '#e4b15a' : zoneStyle(model, 'window') === 2 ? '#1c1a18' : '#f6efe4';
+    ctx.lineWidth = Math.max(4, w * 0.012);
+    ctx.strokeRect(win.x, win.y, win.w, win.h);
+    ctx.beginPath();
+    ctx.moveTo(win.x + win.w / 2, win.y);
+    ctx.lineTo(win.x + win.w / 2, win.y + win.h);
+    ctx.moveTo(win.x, win.y + win.h * 0.46);
+    ctx.lineTo(win.x + win.w, win.y + win.h * 0.46);
+    ctx.stroke();
+    paintFloorPlane(ctx, shell, floorStyle, tier);
+    if (maxLevel >= 2) drawRug(ctx, shell, floorStyle);
+    if (maxLevel >= 2) drawFrames(ctx, shell, maxLevel >= 6 ? 2 : 1);
+    if (maxLevel >= 2) drawSofa(ctx, shell, softStyle, t);
+    if (maxLevel >= 4) drawCoffee(ctx, shell);
+    if (maxLevel >= 2) drawPlant(ctx, shell, t);
+    if (maxLevel >= 2) drawTorch(ctx, shell, lightStyle, t);
+    if (maxLevel >= 2) drawChandelier(ctx, shell, lightStyle || (tier >= 5 ? 3 : 1), t);
+    if (maxLevel >= 8) drawWorkstation(ctx, shell, techStyle, t);
     if (tier === 0) {
-      ctx.strokeStyle = '#5c6568';
-      ctx.lineWidth = Math.max(4, w * 0.012);
+      ctx.strokeStyle = 'rgba(40, 32, 28, 0.4)';
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(w * 0.1, h * 0.08);
-      ctx.lineTo(w * 0.1, floorY * 0.7);
+      ctx.moveTo(w * 0.08, h * 0.16);
+      ctx.lineTo(w * 0.12, h * 0.32);
       ctx.stroke();
     }
-    var win = look.win;
-    paintWindow(ctx, w * win[0], h * win[1], w * win[2], h * win[3], look, tier, t);
-    paintFloor(ctx, w, h, floorY, look);
-    ctx.fillStyle = tier >= 6 ? '#e4b15a' : 'rgba(80, 60, 40, 0.45)';
-    ctx.fillRect(0, floorY - h * 0.012, w, h * 0.016);
-    if (look.rug) {
-      ctx.fillStyle = look.rug;
-      roundRect(ctx, w * 0.18, floorY + (h - floorY) * 0.22, w * 0.64, (h - floorY) * 0.55, 14);
-      ctx.fill();
-    }
-    if (tier < 6) {
-      ctx.fillStyle = 'rgba(255, 214, 150, 0.1)';
-      ctx.beginPath();
-      ctx.moveTo(w * (win[0] + win[2] * 0.5), h * (win[1] + win[3]));
-      ctx.lineTo(w * 0.12, h);
-      ctx.lineTo(w * 0.88, h);
-      ctx.fill();
-    }
-    var warmth = Math.min(1, rentLevel / 8);
-    if (warmth > 0) {
-      ctx.fillStyle = 'rgba(255, 196, 120, ' + (warmth * 0.14) + ')';
-      ctx.fillRect(0, 0, w, h);
-    }
-    var unit = Math.min(w, h);
-    var decor = decorFor(maxLevel);
-    for (var i = 0; i < decor.length; i += 1) {
-      var piece = decor[i];
-      var size = unit * piece.s;
-      var x = w * piece.x;
-      var y = h * piece.foot - size;
-      var sprite = renderSprite(piece.level, size, t + i);
-      ctx.drawImage(sprite, x, y, size, size);
-    }
-    var vignette = radial(ctx, w / 2, h * 0.45, w * 0.2, w * 0.75, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.28)']]);
-    ctx.fillStyle = vignette;
+    ctx.fillStyle = 'rgba(255, 236, 210, ' + (0.05 + (1 - sky.night) * 0.08) + ')';
     ctx.fillRect(0, 0, w, h);
+  }
+
+  function catRect(w, h, maxLevel) {
+    if ((maxLevel || 0) < 2) return null;
+    var shell = roomShell(w, h);
+    var sofaW = (shell.x1 - shell.x0) * 0.46;
+    var x = shell.x0 + 28 + sofaW * 0.5;
+    var y = shell.y1 - shell.y0 * 0.02;
+    var sofaH = (h - shell.y1) * 0.55;
+    return { x: x, y: y + sofaH * 0.36, w: sofaW * 0.28, h: sofaH * 0.28 };
+  }
+
+  function rarityColors(level) {
+    if (level >= 13) return ['#5a3d12', '#e4b15a', '#fff6d4'];
+    if (level >= 10) return ['#3a2468', '#b388ff', '#f3e8ff'];
+    if (level >= 7) return ['#16345c', '#4c9bff', '#e5f1ff'];
+    if (level >= 4) return ['#114233', '#3dcaa0', '#e7fff6'];
+    return ['#3a3834', '#9a958c', '#f4f1ea'];
+  }
+
+  function paintToken(ctx, level, w, h, time) {
+    var safe = Math.max(1, Math.min(15, level | 0));
+    var colors = rarityColors(safe);
+    var pad = Math.min(w, h) * 0.05;
+    var radius = Math.min(w, h) * 0.18;
+    roundRect(ctx, pad, pad, w - pad * 2, h - pad * 2, radius);
+    ctx.fillStyle = linear(ctx, pad, pad, w, h, [[0, colors[2]], [0.45, colors[1]], [1, colors[0]]]);
+    ctx.fill();
+    ctx.lineWidth = Math.max(2, Math.min(w, h) * 0.045);
+    ctx.strokeStyle = colors[1];
+    ctx.stroke();
+    ctx.save();
+    roundRect(ctx, pad, pad, w - pad * 2, h * 0.42, radius);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.fillRect(pad, pad, w, h * 0.28);
+    ctx.restore();
+    var size = Math.round(Math.min(w, h) * 0.8);
+    var sprite = renderSprite(safe, size, time || 0);
+    ctx.drawImage(sprite, (w - size) / 2, (h - size) / 2, size, size);
   }
 
   window.AureliaArt = {
     ITEM_COUNT: 15,
     paintItem: paintItem,
+    paintToken: paintToken,
     paintRoom: paintRoom,
-    visualTier: visualTier
+    visualTier: visualTier,
+    catRect: catRect
   };
 })();

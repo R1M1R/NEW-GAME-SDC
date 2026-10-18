@@ -50,6 +50,11 @@
     codex.hidden = true;
     codex.setAttribute('role', 'dialog');
     codex.setAttribute('aria-modal', 'true');
+    var backdrop = document.createElement('button');
+    backdrop.type = 'button';
+    backdrop.className = 'overlay-backdrop';
+    var panel = document.createElement('div');
+    panel.className = 'codex-panel';
     var codexBar = document.createElement('div');
     codexBar.className = 'sheet-bar';
     var codexTitle = document.createElement('h2');
@@ -62,10 +67,13 @@
     codexScroll.className = 'codex-scroll';
     codexBar.appendChild(codexTitle);
     codexBar.appendChild(codexClose);
-    codex.appendChild(codexBar);
-    codex.appendChild(codexScroll);
+    panel.appendChild(codexBar);
+    panel.appendChild(codexScroll);
+    codex.appendChild(backdrop);
+    codex.appendChild(panel);
     app.appendChild(codex);
     codexClose.addEventListener('click', function () { closeCodex(); });
+    backdrop.addEventListener('click', function () { closeCodex(); });
 
     function resize() {
       var dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -110,6 +118,8 @@
         var t = Math.min(1, floater.age / floater.life);
         var x = cubic(floater.x0, floater.x1, floater.x2, floater.x3, t);
         var y = cubic(floater.y0, floater.y1, floater.y2, floater.y3, t);
+        var limit = dockLimit();
+        if (y > limit) y = limit;
         var fade = t < 0.72 ? 1 : Math.max(0, 1 - (t - 0.72) / 0.28);
         floater.node.style.left = x + 'px';
         floater.node.style.top = y + 'px';
@@ -190,6 +200,12 @@
       if (particles.length > 250) particles.splice(0, particles.length - 250);
     }
 
+    function dockLimit() {
+      var dock = document.querySelector('.dock');
+      if (!dock) return window.innerHeight - 16;
+      return dock.getBoundingClientRect().top - 36;
+    }
+
     function floatText(x, y, text, tone) {
       if (!text) return;
       var node = document.createElement('div');
@@ -197,18 +213,19 @@
       node.textContent = text;
       floatLayer.appendChild(node);
       var drift = Math.random() * 70 - 35;
+      var y0 = Math.min(y, dockLimit());
       floaters.push({
         node: node,
         age: 0,
         life: 0.95,
         x0: x,
-        y0: y,
+        y0: y0,
         x1: x + drift * 0.3,
-        y1: y - 36,
+        y1: y0 - 28,
         x2: x + drift,
-        y2: y - 78,
+        y2: y0 - 62,
         x3: x + drift * 0.6,
-        y3: y - 118
+        y3: y0 - 96
       });
       if (floaters.length > 16) {
         var old = floaters.shift();
@@ -301,11 +318,15 @@
       renderCodex();
       codex.hidden = false;
       codexOpen = true;
+      requestAnimationFrame(function () { codex.classList.add('is-open'); });
     }
 
     function closeCodex() {
-      codex.hidden = true;
+      codex.classList.remove('is-open');
       codexOpen = false;
+      setTimeout(function () {
+        if (!codexOpen) codex.hidden = true;
+      }, 300);
     }
 
     resize();
