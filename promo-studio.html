@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Аурелия — промо для Яндекс Игр</title>
+  <style>
+    :root {
+      --ink: #14110e;
+      --panel: #241c16;
+      --line: rgba(228, 177, 90, 0.35);
+      --cream: #f6efe4;
+      --gold: #e4b15a;
+      --muted: rgba(246, 239, 228, 0.68);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(900px 420px at 10% -10%, rgba(228, 177, 90, 0.16), transparent 50%),
+        var(--ink);
+      color: var(--cream);
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+    main {
+      width: min(1100px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 64px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 500;
+      font-size: 40px;
+    }
+    .lead { margin: 0 0 28px; color: var(--muted); line-height: 1.5; }
+    .card {
+      margin: 0 0 28px;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(36, 28, 22, 0.92);
+      border: 1px solid var(--line);
+    }
+    .card h2 { margin: 0 0 4px; font-size: 22px; }
+    .meta { margin: 0 0 14px; color: var(--gold); font-size: 14px; }
+    canvas {
+      display: block;
+      width: min(100%, 640px);
+      height: auto;
+      border-radius: 16px;
+      background: #000;
+    }
+    canvas.tall { width: min(100%, 360px); }
+    button {
+      margin-top: 14px;
+      min-height: 48px;
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #f0d7a2, #e4b15a);
+      color: #2a1c0e;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    button:hover { filter: brightness(1.05); }
+    .copy-grid {
+      display: grid;
+      gap: 18px;
+    }
+    .copy-block h3 { margin: 0 0 6px; font-size: 16px; }
+    .count { color: var(--muted); font-weight: 500; }
+    .count.over { color: #e07a66; }
+    textarea {
+      width: 100%;
+      min-height: 88px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(246, 239, 228, 0.16);
+      background: #120e0b;
+      color: var(--cream);
+      font: inherit;
+      line-height: 1.45;
+      resize: vertical;
+      user-select: text;
+    }
+    textarea.long { min-height: 220px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ghost {
+      background: transparent;
+      color: var(--cream);
+      border: 1px solid var(--line);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Промо-студия Аурелии</h1>
+    <p class="lead">Холсты уже в точном размере для консоли Яндекс Игр. Кнопка сохраняет PNG с этого кадра, без пережатия.</p>
+
+    <section class="card">
+      <h2>Иконка</h2>
+      <p class="meta">512 × 512 px</p>
+      <canvas id="icon" width="512" height="512"></canvas>
+      <button type="button" data-canvas="icon" data-file="aurelia-icon-512.png">Скачать в PNG (точный размер для Яндекс Игр)</button>
+    </section>
+
+    <section class="card">
+      <h2>Обложка</h2>
+      <p class="meta">800 × 470 px</p>
+      <canvas id="cover" width="800" height="470"></canvas>
+      <button type="button" data-canvas="cover" data-file="aurelia-cover-800x470.png">Скачать в PNG (точный размер для Яндекс Игр)</button>
+    </section>
+
+    <section class="card">
+      <h2>Скриншот геймплея, горизонтальный</h2>
+      <p class="meta">1280 × 720 px</p>
+      <canvas id="land" width="1280" height="720"></canvas>
+      <button type="button" data-canvas="land" data-file="aurelia-screen-1280x720.png">Скачать в PNG (точный размер для Яндекс Игр)</button>
+    </section>
+
+    <section class="card">
+      <h2>Скриншот геймплея, вертикальный</h2>
+      <p class="meta">720 × 1280 px</p>
+      <canvas id="port" class="tall" width="720" height="1280"></canvas>
+      <button type="button" data-canvas="port" data-file="aurelia-screen-720x1280.png">Скачать в PNG (точный размер для Яндекс Игр)</button>
+    </section>
+
+    <section class="card">
+      <h2>Тексты для консоли</h2>
+      <div class="copy-grid" id="copy-root"></div>
+    </section>
+  </main>
+  <script src="graphics.js"></script>
+  <script>
+    (function () {
+      var art = window.AureliaArt;
+      var icon = document.getElementById('icon');
+      var cover = document.getElementById('cover');
+      var land = document.getElementById('land');
+      var port = document.getElementById('port');
+      var grid = [1, 2, 3, 4, 5, 5, 6, 7, 8, 9, 9, 10, 11, 12, 13, 14, 15, 7, 4, 2];
+
+      var copy = {
+        ru: {
+          title: 'Аурелия: Мерж Квартира',
+          short: 'Сливай мебель, чини студию и собери пентхаус. Монеты капают каждую секунду.',
+          full: 'Аурелия — idle merge про ремонт: от серого бетона до ночного пентхауса.\n\nКак играть:\n1. Нажмите «Поставка» и поставьте предмет на поле 5×4. Заряды копятся сами, тап по комнате ускоряет их.\n2. Перетащите два одинаковых предмета друг на друга. Они сольются в следующий, более дорогой уровень.\n3. Каждый предмет приносит монеты раз в секунду. Монеты и кристаллы открывают пять веток: уровень поставки, скорость, удачу, аренду и магнит слияния.\n4. Закрывайте квесты сверху экрана и забирайте награду. В энциклопедии за каждый новый предмет выдаются кристаллы.\n5. Реклама необязательна. За ролик можно удвоить доход на 2 минуты, заполнить энергию и получить 3 редких предмета, включить авто-слияние на 60 секунд или поймать золотой дрон доставки.\n\nДойдите до золотого ключа архитектора.'
+        },
+        en: {
+          title: 'Aurelia: Merge Apartment',
+          short: 'Merge furniture, renovate a studio and reach a penthouse. Coins every second.',
+          full: 'Aurelia is an idle merge about renovation: from bare concrete to a night penthouse.\n\nHow to play:\n1. Press Delivery and place a piece on the 5×4 board. Charges refill on their own, and tapping the room speeds them up.\n2. Drag two matching pieces together. They merge into the next, richer level.\n3. Every piece pays coins once a second. Spend coins and crystals on five upgrades: delivery level, supply speed, lucky doubles, rent, and the merge magnet.\n4. Clear the quest at the top and claim the reward. The encyclopedia pays crystals for each piece you discover.\n5. Ads are optional. A video can double income for 2 minutes, refill energy and grant 3 rare pieces, turn on auto-merge for 60 seconds, or catch the golden delivery drone.\n\nReach the architect’s golden key.'
+        }
+      };
+
+      function roundRect(ctx, x, y, w, h, r) {
+        var radius = Math.max(0, Math.min(r, w / 2, h / 2));
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.arcTo(x + w, y, x + w, y + h, radius);
+        ctx.arcTo(x + w, y + h, x, y + h, radius);
+        ctx.arcTo(x, y + h, x, y, radius);
+        ctx.arcTo(x, y, x + w, y, radius);
+        ctx.closePath();
+      }
+
+      var scratch = {};
+
+      function paintAt(ctx, level, x, y, size, time) {
+        var s = Math.max(1, Math.round(size));
+        var sprite = scratch[s];
+        if (!sprite) {
+          sprite = document.createElement('canvas');
+          sprite.width = s;
+          sprite.height = s;
+          scratch[s] = sprite;
+        }
+        art.paintItem(sprite.getContext('2d'), level, s, time);
+        ctx.drawImage(sprite, x, y);
+      }
+
+      function paintRoomAt(ctx, x, y, w, h, time) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, w, h);
+        ctx.clip();
+        ctx.translate(x, y);
+        art.paintRoom(ctx, w, h, { maxLevel: 15, rentLevel: 12 }, time);
+        ctx.restore();
+      }
+
+      function drawCoin(ctx, x, y, r) {
+        var glow = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
+        glow.addColorStop(0, '#fff6d4');
+        glow.addColorStop(0.5, '#e4b15a');
+        glow.addColorStop(1, '#8a5a22');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#6d4a1c';
+        ctx.lineWidth = Math.max(2, r * 0.12);
+        ctx.beginPath();
+        ctx.arc(x, y, r * 0.62, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      function drawArrow(ctx, x, y, w, h) {
+        ctx.save();
+        ctx.shadowColor = '#ffe7a8';
+        ctx.shadowBlur = 26;
+        ctx.fillStyle = '#fff4cc';
+        ctx.beginPath();
+        ctx.moveTo(x, y + h * 0.34);
+        ctx.lineTo(x + w * 0.58, y + h * 0.34);
+        ctx.lineTo(x + w * 0.58, y + h * 0.08);
+        ctx.lineTo(x + w, y + h * 0.5);
+        ctx.lineTo(x + w * 0.58, y + h * 0.92);
+        ctx.lineTo(x + w * 0.58, y + h * 0.66);
+        ctx.lineTo(x, y + h * 0.66);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawIcon(ctx, time) {
+        var sky = ctx.createLinearGradient(0, 0, 512, 512);
+        sky.addColorStop(0, '#ffd978');
+        sky.addColorStop(0.42, '#c47a32');
+        sky.addColorStop(1, '#14262c');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, 512, 512);
+        var glow = ctx.createRadialGradient(150, 180, 20, 160, 190, 220);
+        glow.addColorStop(0, 'rgba(255, 244, 210, 0.55)');
+        glow.addColorStop(1, 'rgba(255, 244, 210, 0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, 512, 512);
+        ctx.fillStyle = 'rgba(12, 28, 34, 0.28)';
+        ctx.beginPath();
+        ctx.arc(360, 190, 150, 0, Math.PI * 2);
+        ctx.fill();
+        paintAt(ctx, 1, 18, 36, 210, time);
+        drawArrow(ctx, 196, 118, 120, 92);
+        paintAt(ctx, 10, 286, 28, 210, time);
+        roundRect(ctx, 28, 392, 456, 88, 28);
+        ctx.fillStyle = '#1a120c';
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#f0d7a2';
+        ctx.stroke();
+        ctx.fillStyle = '#f6efe4';
+        ctx.font = '800 46px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('УР. 1  →  УР. 99', 256, 436);
+      }
+
+      function drawCover(ctx, time) {
+        paintRoomAt(ctx, 0, 0, 800, 470, time);
+        var veil = ctx.createLinearGradient(0, 0, 0, 470);
+        veil.addColorStop(0, 'rgba(12, 9, 7, 0.15)');
+        veil.addColorStop(0.45, 'rgba(12, 9, 7, 0.05)');
+        veil.addColorStop(1, 'rgba(12, 9, 7, 0.78)');
+        ctx.fillStyle = veil;
+        ctx.fillRect(0, 0, 800, 470);
+        ctx.fillStyle = '#f6efe4';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.font = '700 64px Georgia, serif';
+        ctx.fillText('АУРЕЛИЯ', 36, 78);
+        ctx.font = '700 22px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#f0d7a2';
+        ctx.fillText('МЕРЖ   ·   РЕМОНТ   ·   ПЕНТХАУС', 40, 112);
+        var coins = [[690, 54, 28], [742, 96, 18], [640, 108, 16], [760, 48, 12]];
+        for (var i = 0; i < coins.length; i += 1) drawCoin(ctx, coins[i][0], coins[i][1], coins[i][2]);
+        roundRect(ctx, 24, 300, 752, 146, 24);
+        ctx.fillStyle = 'rgba(16, 12, 9, 0.72)';
+        ctx.fill();
+        var levels = [1, 5, 7, 10, 15];
+        for (var n = 0; n < levels.length; n += 1) paintAt(ctx, levels[n], 40 + n * 148, 312, 120, time + n);
+      }
+
+      function drawPill(ctx, x, y, w, h, label, value, color) {
+        roundRect(ctx, x, y, w, h, h / 2);
+        ctx.fillStyle = 'rgba(20, 16, 12, 0.82)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(246, 239, 228, 0.14)';
+        ctx.stroke();
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(246, 239, 228, 0.7)';
+        ctx.font = '600 ' + Math.round(h * 0.28) + 'px "Segoe UI", sans-serif';
+        ctx.fillText(label, x + 14, y + h * 0.38);
+        ctx.fillStyle = color;
+        ctx.font = '800 ' + Math.round(h * 0.34) + 'px "Segoe UI", sans-serif';
+        ctx.fillText(value, x + 14, y + h * 0.68);
+      }
+
+      function drawQuest(ctx, x, y, w, h) {
+        roundRect(ctx, x, y, w, h, 16);
+        ctx.fillStyle = '#2a221b';
+        ctx.fill();
+        ctx.fillStyle = '#e4b15a';
+        ctx.font = '700 ' + Math.round(h * 0.28) + 'px "Segoe UI", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText('КВЕСТ', x + 16, y + h * 0.38);
+        ctx.fillStyle = '#f6efe4';
+        ctx.font = '700 ' + Math.round(h * 0.34) + 'px "Segoe UI", sans-serif';
+        ctx.fillText('Откройте предмет 10 уровня', x + Math.round(h * 1.35), y + h * 0.38);
+        ctx.fillStyle = 'rgba(246, 239, 228, 0.7)';
+        ctx.textAlign = 'right';
+        ctx.fillText('6 / 10', x + w - 16, y + h * 0.38);
+        roundRect(ctx, x + 16, y + h - 22, w - 32, 10, 5);
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.fill();
+        roundRect(ctx, x + 16, y + h - 22, (w - 32) * 0.6, 10, 5);
+        ctx.fillStyle = '#e4b15a';
+        ctx.fill();
+      }
+
+      function drawGrid(ctx, x, y, w, h, time) {
+        var gap = Math.max(6, Math.round(Math.min(w, h) * 0.018));
+        var cellW = (w - gap * 4) / 5;
+        var cellH = (h - gap * 3) / 4;
+        var size = Math.min(cellW, cellH);
+        for (var i = 0; i < 20; i += 1) {
+          var col = i % 5;
+          var row = Math.floor(i / 5);
+          var cx = x + col * (cellW + gap);
+          var cy = y + row * (cellH + gap);
+          roundRect(ctx, cx, cy, cellW, cellH, 12);
+          ctx.fillStyle = '#2a211a';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(228, 177, 90, 0.28)';
+          ctx.stroke();
+          if (!grid[i]) continue;
+          var item = size * 0.92;
+          paintAt(ctx, grid[i], cx + (cellW - item) / 2, cy + (cellH - item) / 2, item, time + i * 0.15);
+        }
+      }
+
+      function drawDock(ctx, x, y, w, h) {
+        ctx.fillStyle = '#1a1410';
+        ctx.fillRect(x, y, w, h);
+        var labels = ['Прокачка', 'Магазин', 'Бустеры'];
+        var buttonW = (w - 36) / 3;
+        for (var i = 0; i < 3; i += 1) {
+          roundRect(ctx, 12 + i * (buttonW + 6), y + 12, buttonW, h - 24, 14);
+          ctx.fillStyle = i === 0 ? '#e4b15a' : '#2a221b';
+          ctx.fill();
+          ctx.fillStyle = i === 0 ? '#2a1c0e' : '#f6efe4';
+          ctx.font = '700 16px "Segoe UI", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(labels[i], 12 + i * (buttonW + 6) + buttonW / 2, y + h / 2);
+        }
+      }
+
+      function drawGameplay(ctx, w, h, time) {
+        ctx.fillStyle = '#14110e';
+        ctx.fillRect(0, 0, w, h);
+        var portrait = h > w;
+        var pad = Math.round(Math.min(w, h) * 0.028);
+        var gap = Math.max(8, Math.round(pad * 0.6));
+        var pillH = portrait ? Math.round(w * 0.11) : 78;
+        var inner = w - pad * 2;
+        var pillW = (inner - gap * 2) / 3;
+        drawPill(ctx, pad, 18, pillW, pillH, 'ДЕНЬГИ', '128K', '#f0d7a2');
+        drawPill(ctx, pad + pillW + gap, 18, pillW, pillH, 'КРИСТАЛЛЫ', '86', '#7fd0d8');
+        drawPill(ctx, pad + (pillW + gap) * 2, 18, pillW, pillH, 'ДОХОД', '4,8/с', '#8eae86');
+        var questY = 18 + pillH + 12;
+        var questH = portrait ? 84 : 72;
+        drawQuest(ctx, pad, questY, w - pad * 2, questH);
+        var top = questY + questH + 14;
+        var dock = portrait ? Math.round(h * 0.08) : 0;
+        var avail = h - top - pad - dock;
+        if (portrait) {
+          var roomH = Math.round(avail * 0.4);
+          roundRect(ctx, pad, top, w - pad * 2, roomH, 18);
+          ctx.save();
+          ctx.clip();
+          paintRoomAt(ctx, pad, top, w - pad * 2, roomH, time);
+          ctx.restore();
+          drawGrid(ctx, pad, top + roomH + 12, w - pad * 2, avail - roomH - 12, time);
+          drawDock(ctx, 0, h - dock, w, dock);
+        } else {
+          var gap = 16;
+          var roomW = Math.round((w - pad * 2 - gap) * 0.58);
+          roundRect(ctx, pad, top, roomW, avail, 18);
+          ctx.save();
+          ctx.clip();
+          paintRoomAt(ctx, pad, top, roomW, avail, time);
+          ctx.restore();
+          drawGrid(ctx, pad + roomW + gap, top, w - pad * 2 - roomW - gap, avail, time);
+        }
+      }
+
+      function frame(now) {
+        var time = now / 1000;
+        drawIcon(icon.getContext('2d'), time);
+        drawCover(cover.getContext('2d'), time);
+        drawGameplay(land.getContext('2d'), 1280, 720, time);
+        drawGameplay(port.getContext('2d'), 720, 1280, time);
+        requestAnimationFrame(frame);
+      }
+
+      function download(canvas, filename) {
+        var link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      document.querySelectorAll('button[data-canvas]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          download(document.getElementById(button.getAttribute('data-canvas')), button.getAttribute('data-file'));
+        });
+      });
+
+      var limits = { title: 30, short: 100, full: 0 };
+      var labels = { title: 'Название', short: 'Короткое описание', full: 'Полное описание и как играть' };
+      var root = document.getElementById('copy-root');
+      ['ru', 'en'].forEach(function (lang) {
+        Object.keys(copy[lang]).forEach(function (key) {
+          var block = document.createElement('div');
+          block.className = 'copy-block';
+          var heading = document.createElement('h3');
+          var count = document.createElement('span');
+          count.className = 'count';
+          var length = copy[lang][key].length;
+          var limit = limits[key];
+          count.textContent = lang.toUpperCase() + ' · ' + labels[key] + ' · ' + length + (limit ? ' / ' + limit : '') + ' симв.';
+          if (limit && length > limit) count.classList.add('over');
+          heading.appendChild(count);
+          var area = document.createElement('textarea');
+          area.className = key === 'full' ? 'long' : '';
+          area.readOnly = true;
+          area.value = copy[lang][key];
+          var row = document.createElement('div');
+          row.className = 'row';
+          var copyButton = document.createElement('button');
+          copyButton.type = 'button';
+          copyButton.className = 'ghost';
+          copyButton.textContent = 'Копировать';
+          copyButton.addEventListener('click', function () {
+            var done = function () { copyButton.textContent = 'Скопировано'; };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(area.value).then(done).catch(function () {
+                area.select();
+                document.execCommand('copy');
+                done();
+              });
+            } else {
+              area.select();
+              document.execCommand('copy');
+              done();
+            }
+          });
+          row.appendChild(copyButton);
+          block.appendChild(heading);
+          block.appendChild(area);
+          block.appendChild(row);
+          root.appendChild(block);
+        });
+      });
+
+      if (!art) return;
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>
