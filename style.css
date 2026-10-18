@@ -2150,7 +2150,9 @@ body.is-paused .app * {
     height: 16dvh;
     max-height: 16dvh;
   }
-  .orders { max-height: 74px; overflow: hidden; padding: 4px; gap: 2px; }
+  .orders { display: flex; flex-direction: column; max-height: 74px; overflow: hidden; padding: 4px; gap: 2px; }
+  .orders-list { display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; }
+  .order-card { flex: none; min-width: 0; width: auto; }
   .orders-head { display: none; }
   .order-top span { display: none; }
   .order-card p.order-why {
