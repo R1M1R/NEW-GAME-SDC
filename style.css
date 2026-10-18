@@ -2150,8 +2150,20 @@ body.is-paused .app * {
     height: 16dvh;
     max-height: 16dvh;
   }
-  .orders { max-height: 58px; overflow: hidden; padding: 4px; gap: 2px; }
+  .orders { max-height: 74px; overflow: hidden; padding: 4px; gap: 2px; }
   .orders-head { display: none; }
+  .order-top span { display: none; }
+  .order-card p.order-why {
+    flex: 0 0 auto;
+    display: block;
+    min-height: 13px;
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    -webkit-line-clamp: unset;
+  }
   .quest {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
