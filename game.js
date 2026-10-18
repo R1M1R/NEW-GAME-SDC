@@ -109,7 +109,7 @@
     }
     if (index % 3 === 2) {
       var rate = 8;
-      try { rate = Math.max(8, incomePerSec()); } catch (error) { rate = 8; }
+      try { rate = steadyIncome(); } catch (error) { rate = 8; }
       return {
         type: 'earn',
         target: Math.max(400, Math.round(rate * 75)),
@@ -169,17 +169,54 @@
     return bag;
   }
 
-  function rollOrder(source, exclude, reserved) {
-    var bag = piecesOn(source);
-    if (reserved && reserved.length) {
-      var copy = bag.slice();
-      for (var r = 0; r < reserved.length; r += 1) {
-        var at = copy.indexOf(reserved[r]);
-        if (at >= 0) copy.splice(at, 1);
-      }
-      if (copy.length >= 2) bag = copy;
-      else bag = [];
+  function levelCounts(source) {
+    var counts = {};
+    var grid = source.grid || [];
+    for (var i = 0; i < grid.length; i += 1) {
+      var level = grid[i] || 0;
+      if (!level || level >= 15) continue;
+      counts[level] = (counts[level] || 0) + 1;
     }
+    return counts;
+  }
+
+  function coversNeeds(needs, counts) {
+    var left = {};
+    var keys = Object.keys(counts);
+    for (var i = 0; i < keys.length; i += 1) left[keys[i]] = counts[keys[i]];
+    for (var n = 0; n < needs.length; n += 1) {
+      var key = String(needs[n]);
+      if (!left[key]) return false;
+      left[key] -= 1;
+    }
+    return true;
+  }
+
+  function spendNeeds(counts, needs) {
+    for (var n = 0; n < needs.length; n += 1) {
+      var key = String(needs[n]);
+      if (counts[key]) counts[key] -= 1;
+    }
+  }
+
+  function orderRelevant(order, counts, spawn) {
+    if (coversNeeds(order.needs, counts)) return true;
+    for (var n = 0; n < order.needs.length; n += 1) {
+      var level = order.needs[n];
+      if (!counts[level] && level !== spawn) return false;
+    }
+    return true;
+  }
+
+  function rollOrder(source, exclude, reserved) {
+    var counts = levelCounts(source);
+    if (reserved && reserved.length) spendNeeds(counts, reserved);
+    var bag = [];
+    var keys = Object.keys(counts);
+    for (var i = 0; i < keys.length; i += 1) {
+      for (var n = 0; n < counts[keys[i]]; n += 1) bag.push(Number(keys[i]));
+    }
+    var spawn = Math.min(14, 1 + ((source.upgrades && source.upgrades.base) || 0));
     var a;
     var b;
     if (bag.length >= 2) {
@@ -188,10 +225,12 @@
       if (second >= first) second += 1;
       a = bag[first];
       b = bag[second];
+    } else if (bag.length === 1) {
+      a = bag[0];
+      b = spawn;
     } else {
-      var peak = playablePeak(source);
-      a = peak;
-      b = Math.max(1, peak - 1);
+      a = spawn;
+      b = spawn;
     }
     if (a > b) {
       var swap = a;
@@ -209,32 +248,53 @@
       uid: source.orderSeq,
       client: pool[Math.floor(Math.random() * pool.length)],
       needs: [a, b],
-      money: Math.round((itemIncome(a) + itemIncome(b)) * 17.5),
+      money: Math.round((itemIncome(a) + itemIncome(b)) * 8 + boardRate(source) * 18),
       crystals: Math.max(1, Math.round((a + b) / 3)),
-      prestige: (6 + a + b) / 100
+      prestige: (6 + a + b) / 100,
+      missSince: 0
     };
+  }
+
+  function holdPieces(counts, needs, reserved) {
+    for (var n = 0; n < needs.length; n += 1) {
+      var key = String(needs[n]);
+      if (!counts[key]) continue;
+      counts[key] -= 1;
+      reserved.push(needs[n]);
+    }
   }
 
   function refreshStaleOrders() {
     if (!state.orders) return;
-    if (piecesOn(state).length < 2) return;
+    var counts = levelCounts(state);
+    var full = levelCounts(state);
+    var spawn = Math.min(14, 1 + (state.upgrades.base || 0));
     var reserved = [];
     var changed = false;
+    var now = Date.now();
     for (var i = 0; i < state.orders.length; i += 1) {
       var order = state.orders[i];
-      if (order && claimMap()[order.uid]) {
-        reserved = reserved.concat(order.needs);
+      if (!order) continue;
+      if (orderRelevant(order, counts, spawn)) {
+        holdPieces(counts, order.needs, reserved);
+        if (order.missSince) order.missSince = 0;
         continue;
+      }
+      var missingFromBoard = !orderRelevant(order, full, spawn);
+      if (missingFromBoard) {
+        if (!order.missSince) {
+          order.missSince = now;
+          continue;
+        }
+        if (now - order.missSince < 4000) continue;
       }
       var exclude = [];
       for (var n = 0; n < state.orders.length; n += 1) {
         if (n !== i && state.orders[n]) exclude.push(state.orders[n].client);
       }
       var next = rollOrder(state, exclude, reserved);
-      var blocked = reserved.length && piecesOn(state).length - reserved.length < 2 && next.needs[0] < playablePeak(state) - 1;
-      if (order && blocked) continue;
       state.orders[i] = next;
-      reserved = reserved.concat(next.needs);
+      holdPieces(counts, next.needs, reserved);
       changed = true;
     }
     if (changed) ordersSig = '';
@@ -409,6 +469,19 @@
   function rentMultiplier() {
     var fever = state.feverLeftMs > 0 ? 3 : 1;
     return (1 + 0.25 * state.upgrades.rent) * (1 + (state.prestige || 0)) * (state.boostLeftMs > 0 ? 2 : 1) * fever;
+  }
+
+  function boardRate(source) {
+    var sum = 0;
+    var grid = source && source.grid ? source.grid : [];
+    for (var i = 0; i < grid.length; i += 1) sum += itemIncome(grid[i]);
+    var rent = source && source.upgrades ? source.upgrades.rent || 0 : 0;
+    var prestige = source && source.prestige ? source.prestige : 0;
+    return Math.max(8, sum * (1 + 0.25 * rent) * (1 + prestige));
+  }
+
+  function steadyIncome() {
+    return boardRate(state);
   }
 
   function incomePerSec() {
@@ -858,12 +931,36 @@
     }, time);
   }
 
+  function wantedMarks() {
+    var used = {};
+    var marks = {};
+    if (!state.orders) return marks;
+    state.orders.forEach(function (order) {
+      for (var n = 0; n < order.needs.length; n += 1) {
+        for (var i = 0; i < CELLS; i += 1) {
+          if (used[i] || state.grid[i] !== order.needs[n]) continue;
+          used[i] = true;
+          marks[i] = true;
+          break;
+        }
+      }
+    });
+    return marks;
+  }
+
+  function applyWanted() {
+    var marks = wantedMarks();
+    for (var i = 0; i < cells.length; i += 1) cells[i].classList.toggle('is-wanted', !!marks[i]);
+  }
+
   function renderBoard() {
     var filled = 0;
+    var marks = wantedMarks();
     for (var i = 0; i < cells.length; i += 1) {
       var level = state.grid[i];
       if (level) filled += 1;
       cells[i].classList.toggle('has-item', !!level);
+      cells[i].classList.toggle('is-wanted', !!marks[i]);
       var badge = cells[i].querySelector('.cell-level');
       badge.textContent = level ? i18n.t('grid.rank', { n: String(level) }) : '';
       cells[i].setAttribute('aria-label', level
@@ -913,19 +1010,20 @@
     renderOrders();
     refreshStaleOrders();
     if (ordersSig === '') renderOrders();
+    applyWanted();
     renderZonePins();
     renderInspire();
     renderEvent();
-    if (state.quest && state.quest.type === 'earn') {
-      var rate = Math.max(1, incomePerSec());
-      if (state.quest.target < rate * 20) {
-        state.quest = {
-          type: 'earn',
-          target: Math.max(400, Math.round(rate * 75)),
-          progress: 0,
-          rewardMoney: Math.max(200, Math.round(rate * 25)),
-          rewardCrystals: 1 + Math.floor(discoveredMax() / 4)
-        };
+    if (state.quest && state.quest.type === 'earn' && state.quest.progress < state.quest.target) {
+      var steady = steadyIncome();
+      var nextTarget = Math.max(400, Math.round(steady * 75));
+      var tooSmall = state.quest.target < steady * 20;
+      var tooBig = state.quest.target > steady * 180;
+      if (tooSmall || tooBig) {
+        var ratio = state.quest.target > 0 ? state.quest.progress / state.quest.target : 0;
+        state.quest.target = nextTarget;
+        state.quest.progress = Math.min(nextTarget * 0.9, Math.round(ratio * nextTarget));
+        state.quest.rewardMoney = Math.max(200, Math.round(steady * 25));
       }
     }
     var rush = $('rush-timer');
@@ -1092,8 +1190,14 @@
       juice.floatText(point.left + point.width / 2, point.top, '+' + formatCompact(order.money) + ' 💰', 'gold');
     }
     toast(i18n.t('design.delivered', { name: i18n.t('clients.' + order.client + '.name') }));
-    var exclude = state.orders.map(function (item) { return item.client; });
-    state.orders[index] = rollOrder(state, exclude);
+    var exclude = [];
+    var reserved = [];
+    for (var n = 0; n < state.orders.length; n += 1) {
+      if (!state.orders[n] || n === index) continue;
+      exclude.push(state.orders[n].client);
+      reserved = reserved.concat(state.orders[n].needs);
+    }
+    state.orders[index] = rollOrder(state, exclude, reserved);
     ordersSig = '';
     renderBoard();
     renderHud();
@@ -1152,11 +1256,19 @@
       card.appendChild(top);
       card.appendChild(need);
       var owned = stockLine(order);
+      var pay = document.createElement('em');
+      pay.className = 'order-pay';
+      pay.textContent = i18n.t('design.reward', {
+        money: formatCompact(order.money),
+        crystals: String(order.crystals),
+        pct: String(Math.round(order.prestige * 100))
+      });
       if (!ready) {
         var wait = document.createElement('span');
         wait.className = 'order-wait';
         wait.textContent = owned;
         card.appendChild(wait);
+        card.appendChild(pay);
       } else {
         var button = document.createElement('button');
         button.type = 'button';

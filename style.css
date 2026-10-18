@@ -503,6 +503,10 @@ body.is-paused .app * {
   z-index: 2;
 }
 
+.cell.is-wanted {
+  box-shadow: inset 0 0 0 2px rgba(142, 174, 134, 0.95);
+}
+
 @keyframes pair-wink {
   0%, 100% { transform: translate(0, 0) scale(1); }
   40% { transform: translate(var(--hint-x, 0px), var(--hint-y, 0px)) scale(1.08); }
@@ -1614,6 +1618,13 @@ body.is-paused .app * {
 .order-wait {
   font-size: 11px;
   color: var(--cream-dim);
+}
+
+.order-pay {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--gold-2);
+  white-space: normal;
 }
 
 .order-submit {
