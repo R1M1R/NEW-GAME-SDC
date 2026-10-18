@@ -27,21 +27,23 @@
     var room = document.querySelector('.room');
     if (!room) return;
     var box = room.getBoundingClientRect();
-    var width = toggle.getBoundingClientRect().width || 76;
     var height = toggle.getBoundingClientRect().height || 36;
     var top = box.top + 8;
-    var left = box.right - width - 8;
-    if (top + height > box.bottom - 8) top = Math.max(8, box.bottom - height - 8);
-    if (left < 8) left = 8;
+    if (top + height > box.bottom - 8) top = Math.max(box.top + 8, box.bottom - height - 8);
+    var rightGap = Math.max(8, window.innerWidth - box.right + 8);
     root.style.top = Math.round(top) + 'px';
-    root.style.left = Math.round(left) + 'px';
-    root.style.right = 'auto';
+    root.style.right = Math.round(rightGap) + 'px';
+    root.style.left = 'auto';
     root.style.bottom = 'auto';
   }
 
   placeQA();
   window.addEventListener('resize', placeQA);
-  requestAnimationFrame(placeQA);
+  window.addEventListener('load', placeQA);
+  requestAnimationFrame(function () {
+    placeQA();
+    requestAnimationFrame(placeQA);
+  });
 
   var logNode = panel.querySelector('#qa-log');
   var statusNode = panel.querySelector('#qa-status');

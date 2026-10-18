@@ -1046,6 +1046,16 @@
     considerStage(tier);
   }
 
+  function liftFinishedQuest() {
+    var quest = state.quest;
+    if (!quest || quest.progress < quest.target) return;
+    var rate = steadyIncome();
+    var floor = Math.round(rate * 20);
+    if (floor <= quest.rewardMoney) return;
+    quest.rewardMoney = floor;
+    if ((quest.rewardCrystals || 0) < 2) quest.rewardCrystals = 2;
+  }
+
   function renderHud() {
     var income = incomePerSec();
     nodes.money.textContent = formatCompact(state.money);
@@ -1067,6 +1077,7 @@
     nodes.questFill.style.width = (ratio * 100).toFixed(1) + '%';
     nodes.questTrack.setAttribute('aria-valuenow', String(Math.round(ratio * 100)));
     nodes.questTrack.setAttribute('aria-valuetext', questTitle());
+    liftFinishedQuest();
     var ready = questReady();
     nodes.claim.hidden = !ready;
     if (ready) {
