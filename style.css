@@ -1564,6 +1564,13 @@ body.is-paused .app * {
   border: 1px solid var(--line);
 }
 
+.order-top {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
 .order-card strong,
 .order-card span,
 .order-card em {
@@ -1703,7 +1710,6 @@ body.is-paused .app * {
 .fuse-box[hidden] { display: none; }
 
 .inspire {
-  order: 6;
   flex: 0 0 auto;
   display: grid;
   gap: 2px;

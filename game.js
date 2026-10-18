@@ -135,16 +135,39 @@
     };
   }
 
+  function playablePeak(source) {
+    var grid = source.grid || [];
+    var base = source.upgrades ? source.upgrades.base || 0 : 0;
+    var spawn = Math.min(14, 1 + base);
+    var counts = {};
+    for (var i = 0; i < grid.length; i += 1) {
+      var level = grid[i] || 0;
+      if (!level || level >= 15) continue;
+      counts[level] = (counts[level] || 0) + 1;
+    }
+    var paired = 0;
+    var highest = 0;
+    var keys = Object.keys(counts);
+    for (var n = 0; n < keys.length; n += 1) {
+      var lv = Number(keys[n]);
+      if (lv > highest) highest = lv;
+      if (counts[lv] >= 2 && lv > paired) paired = lv;
+    }
+    if (paired > 0) return Math.min(12, paired);
+    if (highest > 1) return Math.min(12, highest - 1);
+    return Math.max(1, Math.min(12, spawn));
+  }
+
   function rollOrder(source, exclude) {
-    var peak = Math.max(1, Math.min(12, discoveredMaxOf(source) || 1));
-    var a = Math.max(1, peak - (Math.random() < 0.55 ? 1 : 0));
-    var b = Math.max(1, peak - (Math.random() < 0.35 ? 0 : 1));
+    var peak = playablePeak(source);
+    var low = Math.max(1, peak - 1);
+    var a = Math.random() < 0.5 ? low : peak;
+    var b = Math.random() < 0.7 ? peak : low;
     if (a > b) {
       var swap = a;
       a = b;
       b = swap;
     }
-    if (Math.random() < 0.45 && peak < 12) b = Math.min(12, peak + 1);
     var pool = [];
     var skip = exclude || [];
     for (var i = 0; i < CLIENT_IDS.length; i += 1) {
@@ -160,6 +183,25 @@
       crystals: Math.max(1, Math.round((a + b) / 3)),
       prestige: (6 + a + b) / 100
     };
+  }
+
+  function refreshStaleOrders() {
+    if (!state.orders) return;
+    var floor = Math.max(1, playablePeak(state) - 2);
+    var changed = false;
+    for (var i = 0; i < state.orders.length; i += 1) {
+      var order = state.orders[i];
+      if (!order) continue;
+      if (order.needs[0] >= floor || order.needs[1] >= floor) continue;
+      if (claimMap()[order.uid]) continue;
+      var exclude = [];
+      for (var n = 0; n < state.orders.length; n += 1) {
+        if (n !== i) exclude.push(state.orders[n].client);
+      }
+      state.orders[i] = rollOrder(state, exclude);
+      changed = true;
+    }
+    if (changed) ordersSig = '';
   }
 
   function seedOrders(source) {
@@ -624,12 +666,6 @@
     cell.classList.remove('is-pulse');
     void cell.offsetWidth;
     cell.classList.add('is-pulse');
-    flyCoin(index);
-    if (juice && state.grid[index]) {
-      var point = cellPoint(index);
-      var payout = Math.round(itemIncome(state.grid[index]) * rentMultiplier());
-      if (payout > 0) juice.floatText(point.x, point.y, '+' + formatCompact(payout) + ' 💰', 'gold');
-    }
   }
 
   function flyCoin(index) {
@@ -839,6 +875,8 @@
     renderAffordance();
     renderOffers();
     renderOrders();
+    refreshStaleOrders();
+    if (ordersSig === '') renderOrders();
     renderZonePins();
     renderInspire();
     renderEvent();
