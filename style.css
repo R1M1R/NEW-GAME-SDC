@@ -1717,13 +1717,23 @@ body.is-paused .app * {
   padding: 6px 8px;
   border-radius: 12px;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  overflow: hidden;
   background: linear-gradient(180deg, #d7f0c8, #8eae86);
   color: #14210f;
   font-weight: 800;
   line-height: 1.15;
+}
+
+.order-submit b,
+.order-submit small {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .order-submit small {
@@ -2197,7 +2207,22 @@ body.is-paused .app * {
   .order-need-name { display: none; }
   .order-need { padding: 1px 3px 1px 1px; }
   .order-need canvas { width: 18px; height: 18px; }
-  .order-submit { min-height: 24px; margin-top: 0; padding: 2px 4px; }
+  .order-row { align-items: center; }
+  .order-submit {
+    min-height: 28px;
+    max-height: 32px;
+    margin-top: 0;
+    padding: 2px 4px;
+    flex-direction: row;
+    align-items: center;
+    overflow: hidden;
+  }
+  .order-submit b,
+  .order-submit small {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .cell-level {
     left: 2px;
     top: 2px;
