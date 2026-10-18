@@ -1741,6 +1741,8 @@ body.is-paused .app * {
   font-weight: 700;
 }
 
+.order-pay-short { display: none; }
+
 .orders-prestige {
   font-size: 11px;
   color: var(--gold-2);
@@ -2218,10 +2220,14 @@ body.is-paused .app * {
     overflow: hidden;
   }
   .order-submit b,
-  .order-submit small {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .order-submit .order-pay { display: none; }
+  .order-submit { flex: 1 1 auto; min-width: 0; }
+  .order-pay-short {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 800;
   }
   .cell-level {
     left: 2px;

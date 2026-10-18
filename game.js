@@ -1384,8 +1384,15 @@
         crystals: String(order.crystals),
         pct: String(Math.round(orderPrestige(order.needs) * 100))
       });
+      var brief = document.createElement('small');
+      brief.className = 'order-pay-short';
+      brief.textContent = i18n.t('design.payShort', {
+        money: formatCompact(money),
+        crystals: String(order.crystals)
+      });
       button.appendChild(verb);
       button.appendChild(prize);
+      button.appendChild(brief);
       if (view.ready) button.addEventListener('click', function () { deliverOrder(order.uid, card); });
       row.appendChild(needs);
       row.appendChild(button);
