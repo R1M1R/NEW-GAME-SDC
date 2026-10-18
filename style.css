@@ -2180,7 +2180,7 @@ body.is-paused .app * {
   }
   .quest {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) minmax(88px, 36%);
     align-items: center;
     column-gap: 8px;
     row-gap: 3px;
@@ -2188,11 +2188,18 @@ body.is-paused .app * {
   }
   .quest-row,
   .quest-track { grid-column: 1; min-width: 0; }
+  .quest-kicker { display: none; }
+  .quest-title { font-size: 12px; }
   .quest-claim {
     grid-column: 2;
     grid-row: 1 / span 2;
     min-height: 32px;
-    padding: 0 10px;
+    max-width: 100%;
+    padding: 4px 8px;
+    font-size: 11px;
+    line-height: 1.15;
+    white-space: normal;
+    text-align: center;
     box-shadow: none;
   }
   .inspire {
