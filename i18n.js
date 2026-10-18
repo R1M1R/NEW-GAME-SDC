@@ -100,7 +100,7 @@
         rareChest: 'Сундук: {name}',
         rareGold: 'Поле полно. Сундук стал монетами: +{amount}',
         zoneDone: 'Зона обновлена: {style}',
-        delivered: '{name} принял проект',
+        delivered: '{name}: «Восторг! Проект принят»',
         purr: 'Мррр'
       },
       nav: {
