@@ -108,11 +108,13 @@
       };
     }
     if (index % 3 === 2) {
+      var rate = 8;
+      try { rate = Math.max(8, incomePerSec()); } catch (error) { rate = 8; }
       return {
         type: 'earn',
-        target: Math.round(700 * Math.pow(1.8, tier)),
+        target: Math.max(400, Math.round(rate * 75)),
         progress: 0,
-        rewardMoney: Math.round(rewardMoney * 1.4),
+        rewardMoney: Math.max(200, Math.round(rate * 25)),
         rewardCrystals: rewardCrystals
       };
     }
@@ -914,6 +916,18 @@
     renderZonePins();
     renderInspire();
     renderEvent();
+    if (state.quest && state.quest.type === 'earn') {
+      var rate = Math.max(1, incomePerSec());
+      if (state.quest.target < rate * 20) {
+        state.quest = {
+          type: 'earn',
+          target: Math.max(400, Math.round(rate * 75)),
+          progress: 0,
+          rewardMoney: Math.max(200, Math.round(rate * 25)),
+          rewardCrystals: 1 + Math.floor(discoveredMax() / 4)
+        };
+      }
+    }
     var rush = $('rush-timer');
     if (rush) {
       rush.textContent = state.boostLeftMs > 0
@@ -1131,7 +1145,7 @@
       top.appendChild(heading);
       top.appendChild(role);
       var need = document.createElement('p');
-      need.textContent = i18n.t('design.ask', {
+      need.textContent = i18n.t('design.wish' + order.client.charAt(0).toUpperCase() + order.client.slice(1), {
         a: i18n.t('items.' + order.needs[0] + '.name'),
         b: i18n.t('items.' + order.needs[1] + '.name')
       });

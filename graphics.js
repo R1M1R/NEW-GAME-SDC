@@ -700,6 +700,24 @@
     return zone.style | 0;
   }
 
+  function dominantStyle(model, tier) {
+    var tally = { 1: 0, 2: 0, 3: 0 };
+    var ids = ['floor', 'window', 'soft', 'light', 'tech'];
+    for (var i = 0; i < ids.length; i += 1) {
+      var style = zoneStyle(model, ids[i]);
+      if (style) tally[style] += 1;
+    }
+    var best = 0;
+    var score = 0;
+    if (tally[1] > score) { best = 1; score = tally[1]; }
+    if (tally[2] > score) { best = 2; score = tally[2]; }
+    if (tally[3] > score) { best = 3; score = tally[3]; }
+    if (best) return best;
+    if (tier >= 5) return 3;
+    if (tier >= 3) return 2;
+    return 1;
+  }
+
   function roomShell(w, h) {
     var x0 = w * 0.16;
     var x1 = w * 0.84;
@@ -1006,9 +1024,13 @@
     var softStyle = zoneStyle(model, 'soft');
     var lightStyle = zoneStyle(model, 'light');
     var techStyle = zoneStyle(model, 'tech');
-    var wall = tier === 0 ? '#8a837c' : tier >= 5 ? '#efe6da' : '#f7f1e8';
-    if (floorStyle === 2) wall = '#c4b2a4';
-    if (floorStyle === 3) wall = '#1c2430';
+    var mood = dominantStyle(model, tier);
+    var wall = mood === 3 ? '#1a1816' : mood === 2 ? '#c4a48e' : '#f4efe6';
+    if (tier === 0 && mood === 1) wall = '#b7aea4';
+    var floorLook = floorStyle || mood;
+    var softLook = softStyle || mood;
+    var lightLook = lightStyle || mood;
+    var frameLook = zoneStyle(model, 'window') || mood;
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = linear(ctx, 0, 0, 0, h, [[0, mixHex(wall, '#ffffff', 0.15)], [1, wall]]);
     ctx.fillRect(0, 0, w, h);
@@ -1031,7 +1053,21 @@
       h: (shell.y1 - shell.y0) * 0.62
     };
     paintSky(ctx, win.x, win.y, win.w, win.h, sky, t);
-    ctx.strokeStyle = zoneStyle(model, 'window') === 3 ? '#e4b15a' : zoneStyle(model, 'window') === 2 ? '#1c1a18' : '#f6efe4';
+    paintFloorPlane(ctx, shell, floorLook, tier);
+    if (tier >= 4) {
+      ctx.fillStyle = frameLook === 2 ? '#2a241c' : frameLook === 3 ? '#e4b15a' : '#f7f1e8';
+      ctx.fillRect(win.x - 8, win.y, 10, win.h);
+      ctx.fillRect(win.x + win.w - 2, win.y, 10, win.h);
+    }
+    drawRug(ctx, shell, floorLook);
+    drawFrames(ctx, shell, tier >= 4 ? 2 : 1);
+    drawSofa(ctx, shell, softLook, t);
+    if (tier >= 2) drawCoffee(ctx, shell);
+    drawPlant(ctx, shell, t);
+    drawTorch(ctx, shell, lightLook, t);
+    drawChandelier(ctx, shell, lightLook, t);
+    if (tier >= 4) drawWorkstation(ctx, shell, techStyle || mood, t);
+    ctx.strokeStyle = frameLook === 3 ? '#e4b15a' : frameLook === 2 ? '#1c1a18' : '#f6efe4';
     ctx.lineWidth = Math.max(4, w * 0.012);
     ctx.strokeRect(win.x, win.y, win.w, win.h);
     ctx.beginPath();
@@ -1040,15 +1076,6 @@
     ctx.moveTo(win.x, win.y + win.h * 0.46);
     ctx.lineTo(win.x + win.w, win.y + win.h * 0.46);
     ctx.stroke();
-    paintFloorPlane(ctx, shell, floorStyle, tier);
-    drawRug(ctx, shell, floorStyle);
-    drawFrames(ctx, shell, maxLevel >= 6 ? 2 : 1);
-    drawSofa(ctx, shell, softStyle, t);
-    if (maxLevel >= 3) drawCoffee(ctx, shell);
-    drawPlant(ctx, shell, t);
-    drawTorch(ctx, shell, lightStyle, t);
-    drawChandelier(ctx, shell, lightStyle || (tier >= 5 ? 3 : 1), t);
-    if (maxLevel >= 6) drawWorkstation(ctx, shell, techStyle, t);
     if (tier === 0) {
       ctx.strokeStyle = 'rgba(40, 32, 28, 0.4)';
       ctx.lineWidth = 2;
