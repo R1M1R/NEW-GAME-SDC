@@ -1320,6 +1320,15 @@
     });
   }
 
+  function clientWhyPhone(order) {
+    var id = order.client.charAt(0).toUpperCase() + order.client.slice(1);
+    return labelOr('design.whyPhone' + id + String(order.why || 0), clientWhy(order));
+  }
+
+  function itemShort(level) {
+    return labelOr('items.' + level + '.short', i18n.t('items.' + level + '.name'));
+  }
+
   function needChip(line, twin) {
     var chip = document.createElement('div');
     chip.className = 'order-need' + (line.have ? ' is-have' : '');
@@ -1327,15 +1336,28 @@
     icon.width = 56;
     icon.height = 56;
     art.paintItem(icon.getContext('2d'), line.level, 56, animTime);
+    var full = i18n.t('items.' + line.level + '.name');
     var name = document.createElement('b');
     name.className = 'order-need-name';
-    name.textContent = (twin ? '2 × ' : '') + i18n.t('items.' + line.level + '.name');
+    name.textContent = (twin ? '2× ' : '') + full;
+    var brief = document.createElement('b');
+    brief.className = 'order-need-short';
+    brief.textContent = (twin ? '2 ' : '') + itemShort(line.level);
     var mark = document.createElement('i');
     mark.className = 'order-need-mark';
-    mark.textContent = line.have ? '✓' : i18n.t('grid.rank', { n: String(line.level) });
+    mark.textContent = i18n.t('grid.rank', { n: String(line.level) });
+    var level = document.createElement('i');
+    level.className = 'order-need-level';
+    level.textContent = String(line.level);
+    var copy = document.createElement('span');
+    copy.className = 'order-need-copy';
+    chip.title = full + ' · ' + mark.textContent;
     chip.appendChild(icon);
-    chip.appendChild(name);
-    chip.appendChild(mark);
+    copy.appendChild(name);
+    copy.appendChild(brief);
+    copy.appendChild(mark);
+    copy.appendChild(level);
+    chip.appendChild(copy);
     return chip;
   }
 
@@ -1371,8 +1393,11 @@
       top.appendChild(heading);
       top.appendChild(role);
       var why = document.createElement('p');
-      why.className = 'order-why';
+      why.className = 'order-why order-why-full';
       why.textContent = clientWhy(order);
+      var whyPhone = document.createElement('p');
+      whyPhone.className = 'order-why order-why-phone';
+      whyPhone.textContent = clientWhyPhone(order);
       var row = document.createElement('div');
       row.className = 'order-row';
       var needs = document.createElement('div');
@@ -1409,6 +1434,7 @@
       row.appendChild(button);
       card.appendChild(top);
       card.appendChild(why);
+      card.appendChild(whyPhone);
       card.appendChild(row);
       nodes.ordersList.appendChild(card);
     });

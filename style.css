@@ -1651,6 +1651,10 @@ body.is-paused .app * {
   overflow: hidden;
 }
 
+.order-card p.order-why-phone,
+.order-need-short,
+.order-need-level { display: none; }
+
 .order-row {
   display: flex;
   align-items: center;
@@ -1688,7 +1692,7 @@ body.is-paused .app * {
 }
 
 .order-need-name {
-  max-width: 72px;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1711,16 +1715,23 @@ body.is-paused .app * {
   cursor: default;
 }
 
+.order-need-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
 .order-submit {
   min-height: 36px;
   margin-top: 4px;
   padding: 6px 8px;
   border-radius: 12px;
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
   overflow: hidden;
   background: linear-gradient(180deg, #d7f0c8, #8eae86);
   color: #14210f;
@@ -1731,9 +1742,16 @@ body.is-paused .app * {
 .order-submit b,
 .order-submit small {
   min-width: 0;
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.order-submit small.order-pay {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .order-submit small {
@@ -2148,7 +2166,12 @@ body.is-paused .app * {
     max-height: none;
     min-height: 0;
   }
-  .orders { flex: 0 0 auto; max-height: 168px; overflow: auto; }
+  .orders { flex: 0 0 auto; max-height: none; overflow: visible; }
+  .order-row { flex-direction: column; align-items: stretch; gap: 4px; }
+  .order-needs { flex-direction: column; align-items: stretch; width: 100%; }
+  .order-need-name { max-width: none; flex: 0 0 auto; }
+  .order-submit { width: 100%; margin-top: 0; }
+  .order-submit small.order-pay { white-space: nowrap; }
   .merge { flex: 1 1 0; min-height: 0; }
   .room-blurb { display: none; }
   .room-caption { top: 8px; bottom: auto; left: 8px; right: auto; }
@@ -2230,11 +2253,56 @@ body.is-paused .app * {
   .offer-btn { min-height: 30px; }
   .merge { flex: 1 1 auto; min-height: 0; }
   .order-card { padding: 2px 4px; gap: 1px; }
-  .order-card p.order-why { -webkit-line-clamp: 1; font-size: 10px; }
+  .order-card p.order-why-full { display: none; }
+  .order-card p.order-why-phone {
+    display: block;
+    min-height: 12px;
+    font-size: 10px;
+    line-height: 1.2;
+    white-space: nowrap;
+    text-overflow: clip;
+    overflow: hidden;
+    -webkit-line-clamp: unset;
+  }
+  .order-needs {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .order-need-copy { flex-direction: row; align-items: center; gap: 3px; }
+  .order-need {
+    padding: 0 2px;
+    gap: 3px;
+    min-height: 14px;
+    border: none;
+    background: transparent;
+  }
+  .order-need.is-have {
+    border: none;
+    border-radius: 6px;
+    background: rgba(142, 174, 134, 0.22);
+  }
+  .order-need canvas { display: none; }
   .order-need-name { display: none; }
-  .order-need { padding: 1px 2px 1px 1px; }
   .order-need-mark { display: none; }
-  .order-need canvas { width: 18px; height: 18px; }
+  .order-need-short {
+    display: block;
+    flex: 0 0 auto;
+    max-width: none;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: visible;
+  }
+  .order-need-level {
+    display: block;
+    flex: 0 0 auto;
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 800;
+  }
   .order-row { align-items: center; }
   .order-submit {
     min-height: 28px;
@@ -2247,7 +2315,7 @@ body.is-paused .app * {
   }
   .order-submit b,
   .order-submit .order-pay { display: none; }
-  .order-submit { flex: 1 1 auto; min-width: 0; }
+  .order-submit { flex: 0 0 auto; max-width: 48%; min-width: 72px; }
   .order-pay-short {
     display: block;
     width: 100%;

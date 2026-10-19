@@ -72,6 +72,24 @@
         whyLera0: 'Открываю мастерскую букетов. Нужны свет и простор.',
         whyLera1: 'У мамы юбилей, я украшаю её гостиную.',
         whyLera2: 'Цветам нужен уютный дом, а у меня голые стены.',
+        whyPhoneKirill0: 'Нужен дорогой фон стрима.',
+        whyPhoneKirill1: 'Пустой угол портит эфир.',
+        whyPhoneKirill2: 'Спонсор смотрит студию.',
+        whyPhoneSofia0: 'Без уюта нет лайков.',
+        whyPhoneSofia1: 'Подписчики едут на ужин.',
+        whyPhoneSofia2: 'Бренд снимает у меня.',
+        whyPhoneViktor0: 'Аренда вырастет вдвое.',
+        whyPhoneViktor1: 'Завтра нужен вау-эффект.',
+        whyPhoneViktor2: 'Хочу жить красиво сразу.',
+        whyPhoneAlina0: 'Выставка должна звучать.',
+        whyPhoneAlina1: 'Куратор из Милана ждёт.',
+        whyPhoneAlina2: 'Ищу фон для картины.',
+        whyPhoneMark0: 'Не хватает двух акцентов.',
+        whyPhoneMark1: 'Съёмка журнала в субботу.',
+        whyPhoneMark2: 'Проверяю план вживую.',
+        whyPhoneLera0: 'Нужны свет и простор.',
+        whyPhoneLera1: 'Гостиная к юбилею мамы.',
+        whyPhoneLera2: 'Цветам нужен уютный дом.',
         wishKirill: 'Кирилл ставит «{a}» в кадр. Без «{b}» эфир пустой.',
         wishSofia: 'София снимает обзор: «{a}» рядом с «{b}».',
         wishViktor: 'Виктор оценивает квартиру по «{a}» и «{b}».',
@@ -238,62 +256,77 @@
       items: {
         1: {
           name: 'Рулетка и карандаш',
+          short: 'Рулетка',
           desc: 'Первые метки на бетоне. С них начинается чертёж.'
         },
         2: {
           name: 'Валик с краской',
+          short: 'Валик',
           desc: 'Широкий след свежей краски. Стены перестают быть серыми.'
         },
         3: {
           name: 'Светодиодный торшер',
+          short: 'Торшер',
           desc: 'Ровный свет, который не слепит и не гудит.'
         },
         4: {
           name: 'Кашпо с монстерой',
+          short: 'Монстера',
           desc: 'Дизайнерская керамика и листья с дырками большого города.'
         },
         5: {
           name: 'Кресло-мешок',
+          short: 'Мешок',
           desc: 'Мягкая яма, в которую можно упасть после смены.'
         },
         6: {
           name: 'Лофт-столик',
+          short: 'Столик',
           desc: 'Чёрный металл, толстое дерево, место для чашки и плана.'
         },
         7: {
           name: 'Велюровый диван',
+          short: 'Диван',
           desc: 'Глубокий ворс и посадка, ради которой остаются гости.'
         },
         8: {
           name: 'IT-станция',
+          short: 'Станция',
           desc: 'Два монитора и тихая клавиатура. Работа не спорит с уютом.'
         },
         9: {
           name: 'Кинотеатр QLED',
+          short: 'Кино',
           desc: 'Экран во всю стену. Вечер начинается с одной кнопки.'
         },
         10: {
           name: 'Мраморный остров',
+          short: 'Остров',
           desc: 'Холодный камень, тёплая кухня, два стула и фрукты.'
         },
         11: {
           name: 'Панорамный биокамин',
+          short: 'Камин',
           desc: 'Живое пламя без дыма, на всю ширину гостиной.'
         },
         12: {
           name: 'Рояль',
+          short: 'Рояль',
           desc: 'Чёрный лак, открытая крышка и вечер, который звучит дорого.'
         },
         13: {
           name: 'Джакузи на террасе',
+          short: 'Джакузи',
           desc: 'Тёплая вода над ночным городом.'
         },
         14: {
           name: 'Умный пентхаус',
+          short: 'Пентхаус',
           desc: 'Свет, климат и шторы слушаются одного жеста.'
         },
         15: {
           name: 'Золотой ключ Архитектора',
+          short: 'Ключ',
           desc: 'Империя собрана. Ключ от крыши теперь ваш.'
         }
       },
@@ -587,6 +620,24 @@
         whyLera0: 'I am opening a bouquet studio. I need light and space.',
         whyLera1: 'It is my mom’s anniversary and I am decorating her living room.',
         whyLera2: 'Flowers need a cozy home, and my walls are bare.',
+        whyPhoneKirill0: 'The stream needs a rich set.',
+        whyPhoneKirill1: 'The empty corner ruins it.',
+        whyPhoneKirill2: 'A sponsor is touring today.',
+        whyPhoneSofia0: 'No cozy shot means no likes.',
+        whyPhoneSofia1: 'Followers are coming to eat.',
+        whyPhoneSofia2: 'A brand is shooting here.',
+        whyPhoneViktor0: 'This doubles the night rent.',
+        whyPhoneViktor1: 'A buyer comes tomorrow.',
+        whyPhoneViktor2: 'Beautiful from day one.',
+        whyPhoneAlina0: 'The home show has to sing.',
+        whyPhoneAlina1: 'A Milan curator is coming.',
+        whyPhoneAlina2: 'I need a painting backdrop.',
+        whyPhoneMark0: 'Two accents are missing.',
+        whyPhoneMark1: 'The magazine comes Saturday.',
+        whyPhoneMark2: 'I am testing the real plan.',
+        whyPhoneLera0: 'I need light and some space.',
+        whyPhoneLera1: 'The anniversary room is bare.',
+        whyPhoneLera2: 'Flowers need a cozy home.',
         wishKirill: 'Kirill puts “{a}” on camera. Without “{b}” the stream is empty.',
         wishSofia: 'Sofia is filming “{a}” next to “{b}”.',
         wishViktor: 'Viktor prices the flat by “{a}” and “{b}”.',
@@ -753,62 +804,77 @@
       items: {
         1: {
           name: 'Tape and Pencil',
+          short: 'Tape',
           desc: 'The first marks on concrete. The drawing starts here.'
         },
         2: {
           name: 'Paint Roller',
+          short: 'Roller',
           desc: 'A wide stroke of fresh paint. The walls stop being grey.'
         },
         3: {
           name: 'LED Floor Lamp',
+          short: 'Lamp',
           desc: 'Even light that neither glares nor hums.'
         },
         4: {
           name: 'Monstera Planter',
+          short: 'Monstera',
           desc: 'Designer ceramic and leaves with the holes of a big city.'
         },
         5: {
           name: 'Beanbag Chair',
+          short: 'Beanbag',
           desc: 'A soft pit to fall into after the shift.'
         },
         6: {
           name: 'Loft Coffee Table',
+          short: 'Table',
           desc: 'Black metal, thick wood, room for a cup and a plan.'
         },
         7: {
           name: 'Velvet Sofa',
+          short: 'Sofa',
           desc: 'Deep pile and a seat guests stay for.'
         },
         8: {
           name: 'IT Station',
+          short: 'Station',
           desc: 'Two monitors and a quiet keyboard. Work does not argue with comfort.'
         },
         9: {
           name: 'QLED Home Theater',
+          short: 'Cinema',
           desc: 'A wall of screen. The evening starts with one button.'
         },
         10: {
           name: 'Marble Island',
+          short: 'Island',
           desc: 'Cold stone, a warm kitchen, two stools, and fruit.'
         },
         11: {
           name: 'Panoramic Bio Fireplace',
+          short: 'Hearth',
           desc: 'A living flame without smoke, across the whole lounge.'
         },
         12: {
           name: 'Grand Piano',
+          short: 'Piano',
           desc: 'Black lacquer, an open lid, and an evening that sounds expensive.'
         },
         13: {
           name: 'Terrace Jacuzzi',
+          short: 'Jacuzzi',
           desc: 'Warm water above the night city.'
         },
         14: {
           name: 'Smart Penthouse',
+          short: 'Penthouse',
           desc: 'Light, climate, and shades obey one gesture.'
         },
         15: {
           name: 'Golden Key of the Architect',
+          short: 'Key',
           desc: 'The empire is assembled. The key to the roof is yours.'
         }
       },
