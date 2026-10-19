@@ -226,31 +226,38 @@
       rooms: {
         0: {
           name: 'Черновая студия',
-          blurb: 'Серый бетон, трещины и первые метки на полу.'
+          blurb: 'Серый бетон, трещины и первые метки на полу.',
+          beat: 'Серый бетон и первые метки.'
         },
         1: {
           name: 'Белая коробка',
-          blurb: 'Краска легла ровно. Валик оставил первый широкий след.'
+          blurb: 'Краска легла ровно. Валик оставил первый широкий след.',
+          beat: 'Краска легла ровным слоем.'
         },
         2: {
           name: 'Живой угол',
-          blurb: 'Торшер и монстера. Студия начинает дышать.'
+          blurb: 'Торшер и монстера. Студия начинает дышать.',
+          beat: 'Торшер и монстера. Уже живёт.'
         },
         3: {
           name: 'Гостиная',
-          blurb: 'Велюр, столик и место, куда хочется сесть.'
+          blurb: 'Велюр, столик и место, куда хочется сесть.',
+          beat: 'Велюр и место, куда сесть.'
         },
         4: {
           name: 'Дизайнерский лофт',
-          blurb: 'Два экрана днём, кинотеатр вечером.'
+          blurb: 'Два экрана днём, кинотеатр вечером.',
+          beat: 'Днём экраны, вечером кино.'
         },
         5: {
           name: 'Парадные комнаты',
-          blurb: 'Камин, рояль и свет, который стоит дорого.'
+          blurb: 'Камин, рояль и свет, который стоит дорого.',
+          beat: 'Камин, рояль и дорогой свет.'
         },
         6: {
           name: 'Небесный пентхаус',
-          blurb: 'Ночной город, джакузи и золотой ключ от крыши.'
+          blurb: 'Ночной город, джакузи и золотой ключ от крыши.',
+          beat: 'Ночь, джакузи и ключ крыши.'
         }
       },
       items: {
@@ -774,31 +781,38 @@
       rooms: {
         0: {
           name: 'Bare studio',
-          blurb: 'Grey concrete, cracks, and the first marks on the floor.'
+          blurb: 'Grey concrete, cracks, and the first marks on the floor.',
+          beat: 'Grey concrete and first marks.'
         },
         1: {
           name: 'White box',
-          blurb: 'The paint lies flat. The roller left the first wide stroke.'
+          blurb: 'The paint lies flat. The roller left the first wide stroke.',
+          beat: 'The paint lies flat and even.'
         },
         2: {
           name: 'Living corner',
-          blurb: 'A floor lamp and a monstera. The studio starts to breathe.'
+          blurb: 'A floor lamp and a monstera. The studio starts to breathe.',
+          beat: 'A lamp, a plant, it breathes.'
         },
         3: {
           name: 'Living room',
-          blurb: 'Velvet, a table, and a seat worth staying for.'
+          blurb: 'Velvet, a table, and a seat worth staying for.',
+          beat: 'Velvet and a seat worth staying.'
         },
         4: {
           name: 'Designer loft',
-          blurb: 'Two screens by day, a cinema by night.'
+          blurb: 'Two screens by day, a cinema by night.',
+          beat: 'Screens by day, cinema at night.'
         },
         5: {
           name: 'Parade rooms',
-          blurb: 'A fireplace, a piano, and light that costs something.'
+          blurb: 'A fireplace, a piano, and light that costs something.',
+          beat: 'A fire, a piano, costly light.'
         },
         6: {
           name: 'Sky penthouse',
-          blurb: 'The night city, a jacuzzi, and a golden key to the roof.'
+          blurb: 'The night city, a jacuzzi, and a golden key to the roof.',
+          beat: 'Night city, a tub, the roof key.'
         }
       },
       items: {

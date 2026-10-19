@@ -389,7 +389,15 @@ body.is-paused .app * {
   white-space: normal;
 }
 
-.room-blurb { display: none; }
+.room-blurb {
+  display: block;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.25;
+  color: rgba(246, 239, 228, 0.88);
+}
+
+.room-chapter { display: none; }
 
 .merge {
   flex: 1 1 auto;
@@ -1198,7 +1206,15 @@ body.is-paused .app * {
   .orders { display: flex; max-height: 86px; overflow: hidden; }
   .orders-list { display: flex; overflow: auto; }
   .order-card { flex: 0 0 82%; min-width: 82%; }
-  .room-blurb { display: none; }
+  .room-blurb {
+  display: block;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.25;
+  color: rgba(246, 239, 228, 0.88);
+}
+
+.room-chapter { display: none; }
   .brand-block { min-height: 28px; }
   .quest { padding: 4px 8px; }
   .dock button { min-height: 38px; }
@@ -1303,7 +1319,15 @@ body.is-paused .app * {
   .dock button { min-height: 52px; }
   .dock button span { font-size: 12px; }
   .room-name { font-size: 13px; }
-  .room-blurb { display: none; }
+  .room-blurb {
+  display: block;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.25;
+  color: rgba(246, 239, 228, 0.88);
+}
+
+.room-chapter { display: none; }
   .merge-grid { gap: 8px; }
 
   .sheet-overlay {
@@ -2074,7 +2098,15 @@ body.is-paused .app * {
   .orders { display: flex; max-height: 86px; overflow: hidden; }
   .orders-list { display: flex; overflow: auto; touch-action: pan-x; }
   .order-card { flex: 0 0 82%; min-width: 82%; }
-  .room-blurb { display: none; }
+  .room-blurb {
+  display: block;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.25;
+  color: rgba(246, 239, 228, 0.88);
+}
+
+.room-chapter { display: none; }
   .brand-block { min-height: 28px; }
   .quest { padding: 4px 8px; }
 }
@@ -2127,7 +2159,15 @@ body.is-paused .app * {
   }
   .orders { max-height: 70px; overflow: hidden; }
   .merge { flex: 1 1 0; min-height: 0; }
-  .room-blurb { display: none; }
+  .room-blurb {
+  display: block;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.25;
+  color: rgba(246, 239, 228, 0.88);
+}
+
+.room-chapter { display: none; }
   .room-caption {
     top: 8px;
     bottom: auto;
@@ -2173,7 +2213,15 @@ body.is-paused .app * {
   .order-submit { width: 100%; margin-top: 0; }
   .order-submit small.order-pay { white-space: nowrap; }
   .merge { flex: 1 1 0; min-height: 0; }
-  .room-blurb { display: none; }
+  .room-blurb {
+  display: block;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.25;
+  color: rgba(246, 239, 228, 0.88);
+}
+
+.room-chapter { display: none; }
   .room-caption { top: 8px; bottom: auto; left: 8px; right: auto; }
 }
 
@@ -2333,4 +2381,28 @@ body.is-paused .app * {
     font-size: 8px;
     line-height: 1.2;
   }
+  .room-blurb { display: none; }
+  .brand-block { position: relative; }
+  .room-chapter {
+    display: block;
+    position: absolute;
+    left: 118px;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.15;
+    color: rgba(246, 239, 228, 0.86);
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .room-caption {
+    top: 4px;
+    padding: 1px 8px 2px;
+    max-width: calc(100% - 96px);
+  }
+  .room-name { font-size: 11px; line-height: 1.05; }
+  .room-next { font-size: 10px; line-height: 1.15; }
 }

@@ -1042,6 +1042,7 @@
     var tier = art.visualTier(discoveredMax(), state.upgrades.rent);
     nodes.roomName.textContent = i18n.t('rooms.' + tier + '.name');
     nodes.roomBlurb.textContent = i18n.t('rooms.' + tier + '.blurb');
+    if (nodes.roomChapter) nodes.roomChapter.textContent = labelOr('rooms.' + tier + '.beat', nodes.roomBlurb.textContent);
     if (nodes.roomNext) nodes.roomNext.textContent = contractLine();
     considerStage(tier);
   }
@@ -2409,6 +2410,7 @@
       roomName: $('room-name'),
       roomNext: $('room-next'),
       roomBlurb: $('room-blurb'),
+      roomChapter: $('room-chapter'),
       roomSection: document.querySelector('.room'),
       grid: $('merge-grid'),
       gridCount: $('grid-count'),

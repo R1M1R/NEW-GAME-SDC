@@ -2003,9 +2003,14 @@
       paintPlant(ctx, fp[0] - R.u * 5, fp[1], R.bh * 0.52, techKey, t, 4);
     }
     paintPendant(ctx, R, tier >= 1 ? lightKey : 'raw', tier, t, lights, glow);
-    var dusk = sky.night * (tier >= 4 ? 0.3 : 0.4);
+    var dusk = sky.night * (tier >= 4 ? 0.22 : 0.28);
     if (dusk > 0.01) {
-      ctx.fillStyle = 'rgba(10, 12, 32, ' + dusk + ')';
+      ctx.fillStyle = linear(ctx, 0, 0, 0, h, [
+        [0, 'rgba(8, 12, 28, ' + dusk + ')'],
+        [0.38, 'rgba(8, 12, 28, ' + (dusk * 0.28) + ')'],
+        [0.72, 'rgba(8, 12, 28, ' + (dusk * 0.06) + ')'],
+        [1, 'rgba(8, 12, 28, 0)']
+      ]);
       ctx.fillRect(0, 0, w, h);
     }
     var power = (tier >= 4 ? 0.34 : 0.22) + sky.night * 0.8;
@@ -2023,7 +2028,7 @@
       ctx.fillRect(0, 0, w, h);
     }
     if (tier >= 6) paintSparkles(ctx, R, t);
-    ctx.fillStyle = radial(ctx, w / 2, h * 0.55, Math.min(w, h) * 0.35, Math.max(w, h) * 0.75, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,' + (tier >= 4 ? 0.32 : 0.22) + ')']]);
+    ctx.fillStyle = radial(ctx, w / 2, h * 0.62, Math.min(w, h) * 0.55, Math.max(w, h) * 0.92, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,' + (tier >= 4 ? 0.16 : 0.1) + ')']]);
     ctx.fillRect(0, 0, w, h);
   }
 
