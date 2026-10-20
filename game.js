@@ -1174,6 +1174,19 @@
       return;
     }
   }
+  var guestSeen = '';
+  var guestArrived = 0;
+
+  function guestArrive() {
+    var id = waitingClient();
+    if (id !== guestSeen) {
+      guestSeen = id;
+      guestArrived = performance.now();
+    }
+    if (!id) return 1;
+    return Math.max(0, Math.min(1, (performance.now() - guestArrived) / 900));
+  }
+
   function drawRoom(time) {
     var box = fitCanvas(nodes.room);
     if (!box) return;
@@ -1185,6 +1198,7 @@
       guest: !!client,
       mood: (visitActive() || rehearseActive()) ? 'joy' : 'wait',
       client: client,
+      arrive: guestArrive(),
       pieces: stagedPieces(),
       ghosts: ghostNeeds(),
       flash: performance.now() < roomFlashUntil
@@ -1236,6 +1250,7 @@
     nodes.roomBlurb.textContent = scene || i18n.t('rooms.' + tier + '.blurb');
     if (nodes.roomChapter) nodes.roomChapter.textContent = scene || labelOr('rooms.' + tier + '.beat', nodes.roomBlurb.textContent);
     if (nodes.roomNext) nodes.roomNext.textContent = contractLine();
+    markLivePairs();
     considerStage(tier);
   }
 
@@ -2422,6 +2437,21 @@
   var hintBucket = -1;
   var catNext = 0;
   var qaDrive = false;
+
+  function markLivePairs() {
+    var groups = {};
+    for (var i = 0; i < CELLS; i += 1) {
+      cells[i].classList.remove('is-pair');
+      var level = state.grid[i];
+      if (!level || level >= 15) continue;
+      if (!groups[level]) groups[level] = [];
+      groups[level].push(i);
+    }
+    Object.keys(groups).forEach(function (key) {
+      if (groups[key].length < 2) return;
+      for (var n = 0; n < groups[key].length; n += 1) cells[groups[key][n]].classList.add('is-pair');
+    });
+  }
 
   function winkPairs() {
     var groups = {};

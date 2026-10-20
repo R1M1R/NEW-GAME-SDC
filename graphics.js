@@ -1993,10 +1993,17 @@
     return colors[client] || '#3a2a22';
   }
 
-  function drawGuest(ctx, R, time, mood, client) {
+  function rgbOf(hex) {
+    var n = parseInt(String(hex).slice(1), 16);
+    if (!isFinite(n)) return '255, 214, 160';
+    return ((n >> 16) & 255) + ', ' + ((n >> 8) & 255) + ', ' + (n & 255);
+  }
+
+  function drawGuest(ctx, R, time, mood, client, arrive) {
     var p = floorPt(R, 0.8, 0.48);
     var h = Math.max(18, R.bh * 0.62);
-    var x = p[0];
+    var shown = arrive == null ? 1 : Math.max(0, Math.min(1, arrive));
+    var x = p[0] + (1 - shown) * h * 1.6;
     var foot = p[1];
     var joy = mood === 'joy';
     var wave = Math.sin(time * (joy ? 6 : 1.3)) * h * (joy ? 0.08 : 0.015);
@@ -2101,7 +2108,11 @@
     if (tier >= 6) paintSparkles(ctx, R, t);
     if (model && model.pieces) stageBoard(ctx, R, model.pieces, t);
     if (model && model.ghosts) drawGhosts(ctx, R, model.ghosts, t);
-    if (model && model.guest) drawGuest(ctx, R, t, model.mood, model.client);
+    if (model && model.guest) drawGuest(ctx, R, t, model.mood, model.client, model.arrive);
+    if (model && model.client) {
+      var lamp = floorPt(R, 0.8, 0.4);
+      glowAt(ctx, lamp[0], lamp[1] - R.bh * 0.15, Math.max(30, R.bh), rgbOf(guestTint(model.client)), 0.4);
+    }
     if (model && model.flash) {
       ctx.fillStyle = 'rgba(255, 214, 140, 0.16)';
       ctx.fillRect(0, 0, w, h);
