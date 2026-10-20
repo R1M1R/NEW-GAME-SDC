@@ -5,7 +5,7 @@
     ru: {
       meta: {
         title: 'Аурелия',
-        tagline: 'От черновой студии до пентхауса'
+        tagline: 'Казуальная RPG: отбей дом этаж за этажом'
       },
       currency: {
         money: 'Деньги',
@@ -164,9 +164,9 @@
         purr: 'Мррр'
       },
       nav: {
-        upgrades: 'Прокачка',
-        shop: 'Магазин',
-        boosters: 'Бустеры',
+        upgrades: 'Сила',
+        shop: 'Лавка',
+        boosters: 'Умения',
         sound: 'Звук',
         soundOn: 'Выключить звук',
         soundOff: 'Включить звук',
@@ -174,7 +174,7 @@
         close: 'Закрыть панель'
       },
       grid: {
-        title: 'Мастерская',
+        title: 'Снаряжение',
         count: '{filled} / {total}',
         cell: 'Ячейка {n}',
         rank: 'Ур. {n}',
@@ -381,7 +381,7 @@
         }
       },
       play: {
-        spawn: 'Поставка',
+        spawn: 'Удар',
         energy: '{current}/{max}',
         claim: 'Забрать {money}',
         claimGems: 'Забрать {money} и {crystals} крист.',
@@ -604,7 +604,7 @@
     en: {
       meta: {
         title: 'Aurelia',
-        tagline: 'From a bare studio to a penthouse'
+        tagline: 'A casual RPG: fight up through the house'
       },
       currency: {
         money: 'Money',
@@ -763,9 +763,9 @@
         purr: 'Purr'
       },
       nav: {
-        upgrades: 'Upgrades',
-        shop: 'Shop',
-        boosters: 'Boosters',
+        upgrades: 'Power',
+        shop: 'Store',
+        boosters: 'Skills',
         sound: 'Sound',
         soundOn: 'Mute sound',
         soundOff: 'Unmute sound',
@@ -773,7 +773,7 @@
         close: 'Close panel'
       },
       grid: {
-        title: 'Workshop',
+        title: 'Gear',
         count: '{filled} / {total}',
         cell: 'Cell {n}',
         rank: 'Lv {n}',
@@ -980,7 +980,7 @@
         }
       },
       play: {
-        spawn: 'Delivery',
+        spawn: 'Strike',
         energy: '{current}/{max}',
         claim: 'Claim {money}',
         claimGems: 'Claim {money} and {crystals} gems',

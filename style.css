@@ -665,6 +665,91 @@ body.is-paused .app * {
 
 .spawn-btn.is-deny { animation: deny 0.28s ease; }
 
+.app.is-rpg .merge-grid,
+.app.is-rpg #board-links,
+.app.is-rpg .zone-layer,
+.app.is-rpg .codex-btn {
+  display: none;
+}
+
+.rpg-panel {
+  width: min(100%, 520px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px 10px;
+  z-index: 2;
+}
+
+.rpg-bars label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: #f6efe4;
+}
+
+.rpg-bars i {
+  font-style: normal;
+  color: #e4b15a;
+}
+
+.rpg-track {
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  margin: 2px 0 6px;
+}
+
+.rpg-fill {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+}
+
+.rpg-fill.is-hero { background: linear-gradient(90deg, #c4553a, #e4b15a); }
+.rpg-fill.is-foe { background: linear-gradient(90deg, #6a2a3a, #d46a6a); }
+
+.rpg-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.rpg-actions button,
+.rpg-offer button {
+  flex: 1;
+  min-height: 36px;
+  border: 0;
+  border-radius: 12px;
+  background: #2a211a;
+  color: #f6efe4;
+  font-weight: 700;
+}
+
+.rpg-actions button:disabled { opacity: 0.45; }
+.rpg-note {
+  margin: 0;
+  color: #e4b15a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.rpg-offer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(228, 177, 90, 0.12);
+  color: #f6efe4;
+  font-size: 13px;
+}
+
+.rpg-offer div { display: flex; gap: 8px; }
+
+.app.is-rpg .merge-board { place-items: stretch; }
+
 .energy-track {
   height: 5px;
   border-radius: 99px;
