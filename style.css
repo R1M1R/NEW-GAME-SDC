@@ -651,6 +651,13 @@ body.is-paused .app * {
   font-weight: 800;
 }
 
+.spawn-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
 .spawn-btn.is-empty {
   background: #3a322b;
   color: rgba(246, 239, 228, 0.55);

@@ -417,7 +417,8 @@
       sceneDelivered: 0,
       sceneTapped: 0,
       setDress: 0,
-      deliveredTop: 0
+      deliveredTop: 0,
+      installed: []
     };
     seedOrders(next);
     next.contract = makeContract(next);
@@ -484,6 +485,17 @@
     next.sceneTapped = Math.floor(clamp(raw.sceneTapped, 0, 99));
     next.setDress = Math.floor(clamp(raw.setDress, 0, 6));
     next.deliveredTop = Math.floor(clamp(raw.deliveredTop, 0, 15));
+    next.installed = [];
+    if (Array.isArray(raw.installed)) {
+      raw.installed.forEach(function (level) {
+        var kept = Math.floor(clamp(level, 2, 15));
+        if (kept >= 2 && next.installed.indexOf(kept) < 0) next.installed.push(kept);
+      });
+    }
+    for (var built = 2; built <= next.deliveredTop; built += 1) {
+      if (next.installed.indexOf(built) < 0) next.installed.push(built);
+    }
+    if (next.installed.length > 8) next.installed = next.installed.slice(-8);
     next.zones = blankZones();
     ZONE_IDS.forEach(function (id) {
       var zone = raw.zones && raw.zones[id];
@@ -1117,6 +1129,37 @@
     if (qaDrive) {
       if (hardPaused()) return;
     } else if (platform && platform.pause && platform.pause.active) return;
+    var views = orderViews();
+    var lead = views[0];
+    if (lead && lead.ready) {
+      deliverOrder(lead.order.uid, document.querySelector('.order-card.is-ready'));
+      return;
+    }
+    var mergeLevel = 0;
+    if (lead) {
+      for (var line = 0; line < lead.lines.length; line += 1) {
+        if (lead.lines[line].have) continue;
+        var below = lead.lines[line].level - 1;
+        if (below >= 1 && countLevel(below) >= 2) {
+          mergeLevel = below;
+          break;
+        }
+      }
+    }
+    if (mergeLevel) {
+      var first = -1;
+      var second = -1;
+      for (var cell = 0; cell < CELLS; cell += 1) {
+        if (state.grid[cell] !== mergeLevel) continue;
+        if (first < 0) first = cell;
+        else {
+          second = cell;
+          break;
+        }
+      }
+      if (second >= 0) mergeAt(first, second);
+      return;
+    }
     var fever = state.feverLeftMs > 0;
     var rehearsal = rehearseActive();
     if (!fever && !rehearsal && state.energy < 1) {
@@ -1434,8 +1477,14 @@
   var stageShown = false;
 
   function stagedPieces() {
+    if (!state.installed) state.installed = [];
     var seen = {};
     var list = [];
+    state.installed.forEach(function (level) {
+      if (level < 2 || seen[level]) return;
+      seen[level] = true;
+      list.push(level);
+    });
     var grid = state.grid || [];
     for (var i = 0; i < grid.length; i += 1) {
       var level = grid[i] || 0;
@@ -1443,8 +1492,7 @@
       seen[level] = true;
       list.push(level);
     }
-    list.sort(function (a, b) { return b - a; });
-    return list.slice(0, 3);
+    return list.slice(-4);
   }
 
   function noteStage(pieces) {
@@ -1700,13 +1748,19 @@
       max: String(ENERGY_MAX)
     });
     var spawnWord = nodes.spawn && nodes.spawn.querySelector('span');
-    if (spawnWord) {
-      spawnWord.textContent = filledCount() < 3 && !pairOnBoard() ? i18n.t('design.courierBtn') : i18n.t('play.spawn');
-    }
+    if (spawnWord) spawnWord.textContent = nextMove();
     var interval = energyInterval();
     var charge = state.energy >= ENERGY_MAX ? 1 : state.energyAcc / interval;
     nodes.energyFill.style.width = Math.max(0, Math.min(100, charge * 100)) + '%';
-    nodes.spawn.classList.toggle('is-empty', state.energy < 1);
+    var leadView = orderViews()[0];
+    var canMerge = false;
+    if (leadView && !leadView.ready) {
+      for (var step = 0; step < leadView.lines.length; step += 1) {
+        if (leadView.lines[step].have) continue;
+        if (countLevel(leadView.lines[step].level - 1) >= 2) canMerge = true;
+      }
+    }
+    nodes.spawn.classList.toggle('is-empty', !(leadView && leadView.ready) && !canMerge && state.energy < 1);
     nodes.kicker.textContent = i18n.t('quest.kicker');
     nodes.questTitle.textContent = questTitle();
     nodes.questCount.textContent = questCount();
@@ -1902,6 +1956,12 @@
       if (order.needs[piece] > deliveredLevel) deliveredLevel = order.needs[piece];
     }
     if (deliveredLevel > (state.deliveredTop || 0)) state.deliveredTop = deliveredLevel;
+    if (!state.installed) state.installed = [];
+    if (deliveredLevel >= 2 && state.installed.indexOf(deliveredLevel) < 0) {
+      state.installed.push(deliveredLevel);
+      if (state.installed.length > 8) state.installed = state.installed.slice(-8);
+      toast(i18n.t('design.staged', { item: itemShort(deliveredLevel) }));
+    }
     state.money = Math.min(MAX_MONEY, state.money + order.money);
     state.crystals = Math.min(MAX_CRYSTALS, state.crystals + order.crystals);
     state.prestige = Math.min(50, state.prestige + orderPrestige(order.needs));

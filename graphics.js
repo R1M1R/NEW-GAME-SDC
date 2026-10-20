@@ -1952,17 +1952,21 @@
   }
 
   function stageBoard(ctx, R, pieces, time) {
-    if (!pieces || !pieces.length) return;
-    var spots = [[0.24, 0.82], [0.46, 0.88], [0.62, 0.76]];
-    for (var i = 0; i < pieces.length && i < spots.length; i += 1) {
-      var p = floorPt(R, spots[i][0], spots[i][1]);
-      var size = Math.max(18, R.bh * (i === 0 ? 0.42 : 0.32));
-      var sprite = renderSprite(pieces[i], Math.round(size), time || 0);
+    if (!pieces || !pieces.length || !ctx.canvas || ctx.canvas.height < 160) return;
+    var show = pieces.slice(-4);
+    for (var i = 0; i < show.length; i += 1) {
+      var newest = i === show.length - 1;
+      var p = leftPt(R, 0.22, 0.2 + i * 0.16);
+      var size = Math.max(18, R.bh * (newest ? 0.26 : 0.18));
+      var sprite = renderSprite(show[i], Math.round(size), time || 0);
       ctx.save();
-      ctx.fillStyle = i === 0 ? 'rgba(228, 177, 90, 0.35)' : 'rgba(20, 12, 8, 0.28)';
-      ellipse(ctx, p[0], p[1], size * 0.32, size * 0.08);
+      roundRect(ctx, p[0] - size * 0.56, p[1] - size * 0.62, size * 1.12, size * 0.78, 4);
+      ctx.fillStyle = newest ? 'rgba(255, 246, 220, 0.92)' : 'rgba(255, 250, 242, 0.78)';
       ctx.fill();
-      ctx.drawImage(sprite, p[0] - size * 0.5, p[1] - size * 0.9, size, size);
+      ctx.strokeStyle = newest ? 'rgba(196, 146, 60, 0.95)' : 'rgba(90, 70, 48, 0.35)';
+      ctx.lineWidth = newest ? 2 : 1;
+      ctx.stroke();
+      ctx.drawImage(sprite, p[0] - size * 0.42, p[1] - size * 0.52, size * 0.84, size * 0.58);
       ctx.restore();
     }
   }
@@ -2125,11 +2129,12 @@
     var p = floorPt(R, 0.68, 0.5);
     var h = Math.max(34, R.bh * 0.8);
     var shown = arrive == null ? 1 : Math.max(0, Math.min(1, arrive));
-    var x = p[0] + (1 - shown) * h * 1.6;
+    var x = p[0];
     var foot = p[1];
     var joy = mood === 'joy';
     var wave = Math.sin(time * (joy ? 6 : 1.3)) * h * (joy ? 0.08 : 0.015);
     ctx.save();
+    ctx.globalAlpha = 0.35 + shown * 0.65;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     var coat = guestTint(client);
