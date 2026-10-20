@@ -216,8 +216,13 @@
       hue: (state.chapter * 48 + state.fight * 28) % 360,
       shape: [['dust', 'pipe', 'brute'], ['ooze', 'golem', 'brute'], ['beast', 'moth', 'brute'], ['shade', 'mimic', 'brute'], ['ghost', 'drone', 'brute'], ['imp', 'keys', 'brute'], ['siren', 'hawk', 'warden']][state.chapter][state.fight]
     };
-    state.streak = 0;
     ended = false;
+    if (foe.boss) {
+      showBanner(
+        foe.name,
+        lang() === 'en' ? 'Floor boss · parry the shield' : 'Босс этажа · парируй щит'
+      );
+    }
   }
 
   function fresh() {
@@ -387,13 +392,15 @@
             ? (lang() === 'en' ? 'PERFECT — tap now!' : 'ИДЕАЛЬНО — жми!')
             : telegraph
               ? (foe.guard && foe.open <= 0
-                ? (lang() === 'en' ? 'Parry — break the shield!' : 'Парируй — сломай щит!')
-                : (lang() === 'en' ? 'Wind-up — strike to parry!' : 'Замах — бей, чтобы парировать!'))
+                ? (lang() === 'en' ? 'Parry — break the shield! · ' : 'Парируй — сломай щит! · ') + Math.max(0.1, foe.gap - foe.windup).toFixed(1) + (lang() === 'en' ? 's' : 'с')
+                : (lang() === 'en' ? 'Wind-up · ' : 'Замах · ') + Math.max(0.1, foe.gap - foe.windup).toFixed(1) + (lang() === 'en' ? 's — parry!' : 'с — парируй!'))
             : foe.open > 0 && foe.hp > 0
               ? (lang() === 'en'
                 ? 'HIT NOW · bonus damage · ' + Math.ceil(foe.open) + 's'
                 : 'БЕЙ СЕЙЧАС · бонусный урон · ' + Math.ceil(foe.open) + 'с')
-              : foe.name + '  ' + Math.max(0, Math.ceil(foe.hp)) + '/' + foe.max + (foe.guard && foe.open <= 0 ? (lang() === 'en' ? ' · shield' : ' · щит') : '');
+              : foe.name + '  ' + Math.max(0, Math.ceil(foe.hp)) + '/' + foe.max
+                + (foe.guard && foe.open <= 0 ? (lang() === 'en' ? ' · shield' : ' · щит') : '')
+                + (state.streak > 1 ? (lang() === 'en' ? ' · chain ' : ' · серия ') + state.streak : '');
     }
     if ($('room-blurb')) {
       $('room-blurb').textContent = between
@@ -488,15 +495,20 @@
       var open = !between && foe.open > 0 && foe.hp > 0
         ? (lang() === 'en' ? 'Unload ×1.55 · ' : 'Разряжай ×1.55 · ') + Math.ceil(foe.open) + (lang() === 'en' ? 's' : 'с')
         : '';
+      var windLeft = telegraph ? Math.max(0.1, foe.gap - foe.windup).toFixed(1) + (lang() === 'en' ? 's' : 'с') : '';
       note.textContent = between
-        ? (lang() === 'en' ? 'Room cleared' : 'Комната зачищена')
-        : telegraph
-          ? (foe.guard && foe.open <= 0
-            ? (lang() === 'en' ? 'Parry — break the shield' : 'Парируй — сломай щит')
-            : (lang() === 'en' ? 'Parry now' : 'Парируй'))
-          : (foe.guard && foe.open <= 0
-            ? (lang() === 'en' ? 'Shield — hit the wind-up' : 'Щит — бей в замах')
-            : [open, series, last].filter(Boolean).join(' · ') || (lang() === 'en' ? 'Wait for the wind-up' : 'Жди замах'));
+        ? (state.streak > 1
+          ? (lang() === 'en' ? 'Chain ' : 'Серия ') + state.streak + (lang() === 'en' ? ' · keep going' : ' · продолжай')
+          : (lang() === 'en' ? 'Room cleared' : 'Комната зачищена'))
+        : perfectCue
+          ? (lang() === 'en' ? 'Perfect window · ' : 'Окно идеала · ') + windLeft
+          : telegraph
+            ? (foe.guard && foe.open <= 0
+              ? (lang() === 'en' ? 'Parry shield · ' : 'Парируй щит · ') + windLeft
+              : (lang() === 'en' ? 'Parry · ' : 'Парируй · ') + windLeft)
+            : (foe.guard && foe.open <= 0
+              ? (lang() === 'en' ? 'Shield — hit the wind-up' : 'Щит — бей в замах')
+              : [open, series, last].filter(Boolean).join(' · ') || (lang() === 'en' ? 'Build a parry chain' : 'Копи серию парирований'));
     }
     var list = $('orders-list');
     if (list && list.dataset.rpg !== gearSignature()) {
@@ -845,6 +857,39 @@
       ctx.lineTo(foeX - scale * 0.2, foot - scale * 0.55);
       ctx.stroke();
     }
+    if (!between && foe.hp > 0 && wind > 0.58) {
+      var flight = Math.min(1, (wind - 0.58) / 0.4);
+      var sx = foeX - scale * 0.1;
+      var sy = foot - scale * 0.55;
+      var aimX = heroX + scale * 0.25;
+      var aimY = foot - scale * 0.65;
+      var px = sx + (aimX - sx) * flight;
+      var py = sy + (aimY - sy) * flight;
+      ctx.save();
+      if (foe.shape === 'keys' || foe.shape === 'moth' || foe.shape === 'ghost') {
+        ctx.fillStyle = 'rgba(228, 177, 90, ' + (0.35 + flight * 0.55) + ')';
+        ctx.beginPath();
+        ctx.moveTo(px, py - scale * 0.12);
+        ctx.quadraticCurveTo(px + scale * 0.08, py, px, py + scale * 0.12);
+        ctx.quadraticCurveTo(px - scale * 0.08, py, px, py - scale * 0.12);
+        ctx.fill();
+      } else {
+        ctx.strokeStyle = 'rgba(214, 70, 60, ' + (0.4 + flight * 0.5) + ')';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(px - scale * 0.12, py - scale * 0.04);
+        ctx.lineTo(px + scale * 0.12, py + scale * 0.04);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    if (!between && state.streak > 1 && foe.hp > 0) {
+      ctx.fillStyle = 'rgba(228, 177, 90, 0.92)';
+      ctx.font = '700 ' + Math.max(13, Math.round(scale * 0.28)) + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText((lang() === 'en' ? 'Chain ' : 'Серия ') + state.streak, w * 0.5, foot - scale * 1.55);
+      ctx.textAlign = 'left';
+    }
     var barW = Math.max(36, scale * 1.3);
     var barY = foot - scale * 1.35;
     drawMeter(ctx, heroX - barW / 2, barY, barW, Math.max(0, state.hp / maxHp()), '#e4b15a');
@@ -875,6 +920,7 @@
     state.fight = 0;
     state.seenIntro = false;
     state.cycle = (state.cycle || 0) + 1;
+    state.streak = 0;
     state.hp = maxHp();
     between = null;
     makeFoe();
@@ -1007,6 +1053,8 @@
     blow = { text: word + damage, left: 0.85, crit: crit || finisher || vulnerable || perfect };
     floatAt(blow.text, finisher || crit || perfect ? 'gold' : 'fire');
     if (juice && juice.shake) juice.shake(finisher ? 8 : perfect ? 6 : 3);
+    if (perfect && audio && audio.playUpgrade) audio.playUpgrade();
+    else if (parried && audio && audio.playCoin) audio.playCoin();
     if (foe.hp <= 0) winFight();
     render();
     return true;
@@ -1126,6 +1174,7 @@
         state.chapter += 1;
         state.fight = 0;
         state.seenIntro = false;
+        state.streak = 0;
         toast((lang() === 'en' ? 'Floor clear · ' : 'Этаж чист · ') + tx(chapter()));
         showBanner(tx(chapter()), tx(chapter().intro));
       }
