@@ -2122,7 +2122,7 @@
   }
 
   function drawGuest(ctx, R, time, mood, client, arrive, pose) {
-    var p = floorPt(R, 0.78, 0.66);
+    var p = floorPt(R, 0.62, 0.42);
     var h = Math.max(22, R.bh * 0.62);
     var shown = arrive == null ? 1 : Math.max(0, Math.min(1, arrive));
     var x = p[0] + (1 - shown) * h * 1.6;
@@ -2386,7 +2386,7 @@
     if (model && model.shot && h >= 180) drawShot(ctx, R, model.shotClient || model.client, model.shotLabel);
     if (model && model.guest) {
       drawGuest(ctx, R, t, model.mood, model.client, model.arrive, model.pose);
-      var mouth = floorPt(R, 0.48, 0.28);
+      var mouth = floorPt(R, 0.34, 0.18);
       drawLine(ctx, model.line, mouth[0], mouth[1], Math.min(280, w * 0.58), model.hot);
     }
     if (model && model.client) {
@@ -2403,7 +2403,7 @@
 
   function guestRect(w, h) {
     var R = makeRoom(w, h);
-    var p = floorPt(R, 0.78, 0.66);
+    var p = floorPt(R, 0.62, 0.42);
     var tall = Math.max(22, R.bh * 0.62);
     var rw = Math.max(36, tall * 0.7);
     var rh = Math.max(36, tall * 0.86);
