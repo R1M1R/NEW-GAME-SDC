@@ -1672,9 +1672,24 @@ body.is-paused .app * {
 
 .order-top {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
+}
+
+.order-face {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: 50%;
+  background: #2a211c;
+}
+
+.order-who { min-width: 0; display: flex; flex-direction: column; }
+
+.order-card.is-ready .order-face {
+  box-shadow: 0 0 0 2px #8eae86;
 }
 
 .order-card strong,
@@ -2405,6 +2420,7 @@ body.is-paused .app * {
   .order-card { flex: none; min-width: 0; width: auto; }
   .orders-head { display: none; }
   .order-top span { display: none; }
+  .order-face { display: none; }
   .order-card p.order-why {
     flex: 0 0 auto;
     display: block;

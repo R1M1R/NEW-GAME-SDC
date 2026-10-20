@@ -2387,6 +2387,49 @@
     ctx.drawImage(sprite, (w - size) / 2, (h - size) / 2, size, size);
   }
 
+  function paintPortrait(ctx, client, mood, size) {
+    var s = size || 64;
+    ctx.clearRect(0, 0, s, s);
+    var coat = guestTint(client);
+    var joy = mood === 'joy';
+    var hair = (client === 'sofia' || client === 'alina' || client === 'lera') ? '#4a2c1a' : '#1a120e';
+    ctx.fillStyle = coat;
+    ctx.beginPath();
+    ctx.arc(s * 0.5, s * 0.86, s * 0.42, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = '#f0c9a0';
+    ctx.beginPath();
+    ctx.arc(s * 0.5, s * 0.42, s * 0.24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = hair;
+    ctx.beginPath();
+    ctx.arc(s * 0.5, s * 0.34, s * 0.24, Math.PI, 0);
+    ctx.fill();
+    if (client === 'sofia' || client === 'lera') {
+      ctx.fillRect(s * 0.66, s * 0.34, s * 0.1, s * 0.32);
+    }
+    ctx.fillStyle = '#fffdf8';
+    ctx.beginPath();
+    ctx.arc(s * 0.41, s * 0.42, s * 0.04, 0, Math.PI * 2);
+    ctx.arc(s * 0.59, s * 0.42, s * 0.04, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#1a120e';
+    ctx.beginPath();
+    ctx.arc(s * 0.42, s * 0.43, s * 0.016, 0, Math.PI * 2);
+    ctx.arc(s * 0.6, s * 0.43, s * 0.016, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = joy ? '#c46b66' : '#8d5a54';
+    ctx.lineWidth = Math.max(1.4, s * 0.035);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    if (joy) ctx.arc(s * 0.5, s * 0.5, s * 0.09, 0.25, Math.PI - 0.25);
+    else {
+      ctx.moveTo(s * 0.4, s * 0.56);
+      ctx.lineTo(s * 0.6, s * 0.56);
+    }
+    ctx.stroke();
+  }
+
   window.AureliaArt = {
     ITEM_COUNT: 15,
     paintItem: paintItem,
@@ -2394,6 +2437,7 @@
     paintRoom: paintRoom,
     visualTier: visualTier,
     catRect: catRect,
-    guestRect: guestRect
+    guestRect: guestRect,
+    paintPortrait: paintPortrait
   };
 })();
