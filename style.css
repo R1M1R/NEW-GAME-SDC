@@ -668,10 +668,22 @@ body.is-paused .app * {
   box-shadow: 0 0 0 3px rgba(214, 70, 60, 0.9);
 }
 
+.spawn-btn.is-perfect {
+  animation: perfect-pulse 0.28s ease-in-out infinite;
+  box-shadow: 0 0 0 3px rgba(228, 177, 90, 0.98);
+  background: linear-gradient(180deg, #f6e2a8, #e4b15a);
+  color: #2a1c10;
+}
+
 .spawn-btn.is-open {
   animation: open-pulse 0.35s ease-in-out infinite;
   box-shadow: 0 0 0 3px rgba(142, 174, 134, 0.95);
   background: linear-gradient(180deg, #dce8c8, #9dcc8e);
+}
+
+@keyframes perfect-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.07); }
 }
 
 @keyframes open-pulse {

@@ -114,6 +114,7 @@
   var ended = false;
   var between = null;
   var blow = null;
+  var sparks = null;
 
   function $(id) { return document.getElementById(id); }
 
@@ -372,16 +373,19 @@
     var book = chapter();
     var heroMax = maxHp();
     var telegraph = !between && foe.windup >= foe.gap - 0.48 && !ended && foe.hp > 0;
+    var perfectCue = telegraph && foe.windup >= foe.gap - 0.28 && foe.windup < foe.gap - 0.1;
     if ($('room-name')) $('room-name').textContent = tx(book);
     if ($('room-next')) {
       $('room-next').textContent = ended
         ? (lang() === 'en' ? 'House cleared · cycle ' + ((state.cycle || 0) + 1) : 'Дом зачищен · круг ' + ((state.cycle || 0) + 1))
         : between
           ? between.text
-          : telegraph
-            ? (foe.guard && foe.open <= 0
-              ? (lang() === 'en' ? 'Parry — break the shield!' : 'Парируй — сломай щит!')
-              : (lang() === 'en' ? 'Wind-up — strike to parry!' : 'Замах — бей, чтобы парировать!'))
+          : perfectCue
+            ? (lang() === 'en' ? 'PERFECT — tap now!' : 'ИДЕАЛЬНО — жми!')
+            : telegraph
+              ? (foe.guard && foe.open <= 0
+                ? (lang() === 'en' ? 'Parry — break the shield!' : 'Парируй — сломай щит!')
+                : (lang() === 'en' ? 'Wind-up — strike to parry!' : 'Замах — бей, чтобы парировать!'))
             : foe.open > 0 && foe.hp > 0
               ? (lang() === 'en'
                 ? 'HIT NOW · bonus damage · ' + Math.ceil(foe.open) + 's'
@@ -422,17 +426,20 @@
         ? (lang() === 'en' ? 'Again' : 'Ещё круг')
         : between
           ? (lang() === 'en' ? 'Next' : 'Дальше')
-          : telegraph
-            ? (lang() === 'en' ? 'Parry!' : 'Парируй!')
-            : vulnerable
-              ? (lang() === 'en' ? 'HIT!' : 'Бей!')
-              : state.rage >= 100
-                ? (lang() === 'en' ? 'FINISHER' : 'ПРИЁМ')
-                : (lang() === 'en' ? 'Strike' : 'Удар');
+          : perfectCue
+            ? (lang() === 'en' ? 'Perfect!' : 'Идеально!')
+            : telegraph
+              ? (lang() === 'en' ? 'Parry!' : 'Парируй!')
+              : vulnerable
+                ? (lang() === 'en' ? 'HIT!' : 'Бей!')
+                : state.rage >= 100
+                  ? (lang() === 'en' ? 'FINISHER' : 'ПРИЁМ')
+                  : (lang() === 'en' ? 'Strike' : 'Удар');
     }
     var attackBtn = $('btn-spawn');
     if (attackBtn) {
-      attackBtn.classList.toggle('is-parry', !between && !!telegraph);
+      attackBtn.classList.toggle('is-parry', !between && !!telegraph && !perfectCue);
+      attackBtn.classList.toggle('is-perfect', !between && !!perfectCue);
       attackBtn.classList.toggle('is-open', !!vulnerable && !telegraph);
     }
     if ($('spawn-count')) $('spawn-count').textContent = Math.ceil(state.hp) + '/' + heroMax;
@@ -544,11 +551,19 @@
     ctx.ellipse(0, scale * 0.95, scale * 0.5, scale * 0.12, 0, 0, Math.PI * 2);
     ctx.fill();
     if (wind > 0.72) {
-      ctx.strokeStyle = 'rgba(214, 70, 60, 0.95)';
-      ctx.lineWidth = 4;
+      var perfectNow = wind >= 0.86 && wind < 0.96;
+      ctx.strokeStyle = perfectNow ? 'rgba(228, 177, 90, 0.98)' : 'rgba(214, 70, 60, 0.95)';
+      ctx.lineWidth = perfectNow ? 5 : 4;
       ctx.beginPath();
       ctx.arc(0, scale * 0.2, scale * (0.85 + wind * 0.25), Math.PI * 1.1, Math.PI * 1.9);
       ctx.stroke();
+      if (perfectNow) {
+        ctx.strokeStyle = 'rgba(255, 236, 180, 0.85)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, scale * 0.2, scale * 1.05, Math.PI * 1.25, Math.PI * 1.75);
+        ctx.stroke();
+      }
     }
     var ink = 'hsl(' + foe.hue + ', 46%, 32%)';
     ctx.fillStyle = ink;
@@ -652,14 +667,33 @@
     ctx.restore();
   }
 
+  function cloakTint() {
+    var cloak = state.gear && state.gear.cloak;
+    if (!cloak) return null;
+    if ((cloak.hp || 0) >= 30) return '#2a2438';
+    if ((cloak.hp || 0) >= 18) return '#5a3a55';
+    return '#6a5a48';
+  }
+
   function drawActor(ctx, x, y, scale, kind, flash) {
     ctx.save();
     ctx.translate(x, y);
     if (flash > 0) ctx.globalAlpha = 0.65 + Math.sin(flash * 40) * 0.25;
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
     ctx.beginPath();
-    ctx.ellipse(0, 8, scale * 0.42, scale * 0.12, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, scale * 0.95, scale * 0.42, scale * 0.12, 0, 0, Math.PI * 2);
     ctx.fill();
+    var cape = kind === 'hero' ? cloakTint() : null;
+    if (cape) {
+      ctx.fillStyle = cape;
+      ctx.beginPath();
+      ctx.moveTo(-scale * 0.18, -scale * 0.05);
+      ctx.quadraticCurveTo(-scale * 0.72, scale * 0.35, -scale * 0.4, scale * 0.95);
+      ctx.lineTo(scale * 0.12, scale * 0.9);
+      ctx.quadraticCurveTo(-scale * 0.05, scale * 0.35, scale * 0.1, -scale * 0.02);
+      ctx.closePath();
+      ctx.fill();
+    }
     var body = kind === 'hero' ? '#c4553a' : 'hsl(' + foe.hue + ', 42%, 38%)';
     ctx.fillStyle = body;
     if (kind === 'foe') {
@@ -676,31 +710,56 @@
       ctx.fillRect(scale * 0.06, scale * 0.15, scale * 0.1, scale * 0.55);
     } else {
       ctx.beginPath();
-      ctx.moveTo(-scale * 0.28, -scale * 0.1);
-      ctx.quadraticCurveTo(-scale * 0.46, scale * 0.55, -scale * 0.16, scale * 0.9);
-      ctx.lineTo(scale * 0.16, scale * 0.9);
-      ctx.quadraticCurveTo(scale * 0.46, scale * 0.55, scale * 0.28, -scale * 0.1);
+      ctx.moveTo(-scale * 0.26, -scale * 0.08);
+      ctx.quadraticCurveTo(-scale * 0.44, scale * 0.42, -scale * 0.2, scale * 0.72);
+      ctx.lineTo(-scale * 0.14, scale * 0.98);
+      ctx.lineTo(-scale * 0.02, scale * 0.98);
+      ctx.lineTo(scale * 0.04, scale * 0.72);
+      ctx.lineTo(scale * 0.14, scale * 0.98);
+      ctx.lineTo(scale * 0.26, scale * 0.98);
+      ctx.quadraticCurveTo(scale * 0.44, scale * 0.42, scale * 0.26, -scale * 0.08);
       ctx.closePath();
       ctx.fill();
+      ctx.fillStyle = '#8a3a28';
+      ctx.fillRect(-scale * 0.18, scale * 0.9, scale * 0.14, scale * 0.1);
+      ctx.fillRect(scale * 0.06, scale * 0.9, scale * 0.14, scale * 0.1);
     }
     ctx.fillStyle = kind === 'hero' ? '#f0c9a0' : '#c9b29a';
     ctx.beginPath();
     ctx.arc(0, -scale * 0.42, scale * 0.28, 0, Math.PI * 2);
     ctx.fill();
+    if (kind === 'hero') {
+      ctx.fillStyle = '#3a2418';
+      ctx.beginPath();
+      ctx.ellipse(0, -scale * 0.55, scale * 0.26, scale * 0.14, 0, Math.PI, 0);
+      ctx.fill();
+    }
     ctx.fillStyle = '#1a120e';
     ctx.beginPath();
     ctx.arc(-scale * 0.1, -scale * 0.46, scale * 0.045, 0, Math.PI * 2);
     ctx.arc(scale * 0.1, -scale * 0.46, scale * 0.045, 0, Math.PI * 2);
     ctx.fill();
-    if (kind === 'hero' && state.gear && state.gear.weapon) {
-      ctx.strokeStyle = '#e4b15a';
-      ctx.lineWidth = Math.max(2, scale * 0.06);
+    if (kind === 'hero' && state.gear && state.gear.charm) {
+      var pulse = 0.55 + Math.sin(performance.now() / 180) * 0.25;
+      ctx.fillStyle = 'rgba(228, 177, 90, ' + pulse + ')';
       ctx.beginPath();
-      ctx.moveTo(scale * 0.22, scale * 0.15);
-      ctx.lineTo(scale * 0.55, scale * 0.55);
+      ctx.arc(-scale * 0.02, scale * 0.12, scale * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (kind === 'hero' && state.gear && state.gear.weapon) {
+      var swingAng = heroLunge > 0 ? -0.55 + heroLunge * 0.9 : -0.15;
+      ctx.save();
+      ctx.translate(scale * 0.2, scale * 0.12);
+      ctx.rotate(swingAng);
+      ctx.strokeStyle = '#e4b15a';
+      ctx.lineWidth = Math.max(2, scale * 0.07);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(scale * 0.55, scale * 0.42);
       ctx.stroke();
-      ctx.fillStyle = '#e4b15a';
-      ctx.fillRect(scale * 0.42, scale * 0.48, scale * 0.28, scale * 0.14);
+      ctx.fillStyle = '#f4d78a';
+      ctx.fillRect(scale * 0.4, scale * 0.32, scale * 0.3, scale * 0.14);
+      ctx.restore();
     }
     ctx.restore();
   }
@@ -733,6 +792,21 @@
       ctx.fill();
     } else {
       drawFoe(ctx, foeX, foot - scale * 0.2, scale * (foe.boss ? 1.15 : 1));
+    }
+    if (sparks && sparks.left > 0) {
+      var life = sparks.left / 1.35;
+      var cx = foeX;
+      var cy = foot - scale * 0.55;
+      for (var si = 0; si < sparks.bits.length; si += 1) {
+        var bit = sparks.bits[si];
+        var rad = scale * (bit.r + (1 - life) * 1.8 * bit.s);
+        var px = cx + Math.cos(bit.a) * rad;
+        var py = cy + Math.sin(bit.a) * rad * 0.7;
+        ctx.fillStyle = 'rgba(228, 177, 90, ' + (0.25 + life * 0.7) + ')';
+        ctx.beginPath();
+        ctx.arc(px, py, Math.max(1.5, scale * 0.06 * bit.s * life), 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     if (heroLunge > 0.2) {
       ctx.strokeStyle = 'rgba(244, 214, 150, 0.9)';
@@ -810,6 +884,7 @@
       state.rage = Math.min(100, state.rage + 22);
     }
     var telegraph = foe.windup >= foe.gap - 0.48;
+    var perfect = !fromAuto && telegraph && foe.windup >= foe.gap - 0.28 && foe.windup < foe.gap - 0.1;
     var parried = false;
     var crit = false;
     if (!fromAuto && telegraph) {
@@ -817,6 +892,11 @@
       foe.windup = 0;
       state.streak = (state.streak || 0) + 1;
       power *= 1.45 + Math.min(0.6, (state.streak - 1) * 0.12);
+      if (perfect) {
+        power *= 1.35;
+        state.rage = Math.min(100, state.rage + 12);
+        state.gold += 4 + (state.streak || 0);
+      }
     }
     if (!fromAuto && Math.random() < critChance()) {
       crit = true;
@@ -825,7 +905,7 @@
     if (state.boost) power *= 2;
     var shielded = foe.guard && foe.open <= 0 && !parried && !finisher;
     if (shielded) power *= 0.35;
-    if (parried) foe.open = foe.guard ? 2.8 : 1.55;
+    if (parried) foe.open = foe.guard ? (perfect ? 3.2 : 2.8) : (perfect ? 1.9 : 1.55);
     var vulnerable = foe.open > 0 && !shielded;
     if (vulnerable) power *= 1.55;
     var damage = Math.max(1, Math.round(power));
@@ -846,18 +926,20 @@
     if (audio && audio.playMerge) audio.playMerge(finisher ? 3 : 1);
     var word = finisher
       ? (lang() === 'en' ? 'Finisher ' : 'Приём ')
-      : parried
-        ? (lang() === 'en' ? 'Parry ' : 'Пари ')
-        : vulnerable
-          ? (lang() === 'en' ? 'Open ' : 'Открыт ')
-          : shielded
-          ? (lang() === 'en' ? 'Shield ' : 'Щит ')
-          : crit
-          ? (lang() === 'en' ? 'Crit ' : 'Крит ')
-          : '';
-    blow = { text: word + damage, left: 0.85, crit: crit || finisher || vulnerable };
-    floatAt(blow.text, finisher || crit ? 'gold' : 'fire');
-    if (juice && juice.shake) juice.shake(finisher ? 8 : 3);
+      : perfect
+        ? (lang() === 'en' ? 'Perfect ' : 'Идеал ')
+        : parried
+          ? (lang() === 'en' ? 'Parry ' : 'Пари ')
+          : vulnerable
+            ? (lang() === 'en' ? 'Open ' : 'Открыт ')
+            : shielded
+              ? (lang() === 'en' ? 'Shield ' : 'Щит ')
+              : crit
+                ? (lang() === 'en' ? 'Crit ' : 'Крит ')
+                : '';
+    blow = { text: word + damage, left: 0.85, crit: crit || finisher || vulnerable || perfect };
+    floatAt(blow.text, finisher || crit || perfect ? 'gold' : 'fire');
+    if (juice && juice.shake) juice.shake(finisher ? 8 : perfect ? 6 : 3);
     if (foe.hp <= 0) winFight();
     render();
     return true;
@@ -970,6 +1052,15 @@
     state.boost = false;
     foe.hp = 0;
     foe.open = 0;
+    sparks = { left: 1.35, bits: [] };
+    var i;
+    for (i = 0; i < 18; i += 1) {
+      sparks.bits.push({
+        a: (Math.PI * 2 * i) / 18,
+        r: 0.2 + Math.random() * 0.4,
+        s: 0.6 + Math.random() * 0.8
+      });
+    }
     if (ended) {
       between = null;
     } else {
@@ -1025,6 +1116,10 @@
 
   function step(dt) {
     if (ended || !foe) return;
+    if (sparks) {
+      sparks.left -= dt;
+      if (sparks.left <= 0) sparks = null;
+    }
     if (between) {
       between.left -= dt;
       if (between.left <= 0) finishBetween();
@@ -1132,8 +1227,8 @@
       var note = document.createElement('p');
       note.className = 'sheet-note';
       note.textContent = lang() === 'en'
-        ? 'Strike fills rage. Finisher cracks boss shields. Parry the wind-up for a ×1.55 window. Each floor dresses the room. After the roof, Again starts a harder cycle. Bandage heals a third of your health.'
-        : 'Удары копят ярость. Приём ломает щит босса. Парируй замах — окно ×1.55. Каждый этаж меняет комнату. После крыши «Ещё круг» делает дом злее. Бинт лечит треть здоровья.';
+        ? 'Strike fills rage. Finisher cracks boss shields. Parry the gold sweet spot for a Perfect. That opens a ×1.55 window. Each floor dresses the room. After the roof, Again starts a harder cycle.'
+        : 'Удары копят ярость. Приём ломает щит. В золотой момент замаха жми Идеально — откроется окно ×1.55. Каждый этаж меняет комнату. После крыши «Ещё круг» делает дом злее.';
       scroll.appendChild(note);
     }
     render();
