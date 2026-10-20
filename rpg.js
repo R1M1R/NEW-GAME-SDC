@@ -351,7 +351,9 @@
           ? (foe.guard && foe.open <= 0
             ? (lang() === 'en' ? 'Parry — break the shield!' : 'Парируй — сломай щит!')
             : (lang() === 'en' ? 'Wind-up — strike to parry!' : 'Замах — бей, чтобы парировать!'))
-          : foe.name + '  ' + Math.max(0, Math.ceil(foe.hp)) + '/' + foe.max + (foe.guard && foe.open <= 0 ? (lang() === 'en' ? ' · shield' : ' · щит') : '');
+          : foe.guard && foe.open > 0
+            ? foe.name + '  ' + Math.max(0, Math.ceil(foe.hp)) + '/' + foe.max + (lang() === 'en' ? ' · shield open ' : ' · щит открыт ') + Math.ceil(foe.open)
+            : foe.name + '  ' + Math.max(0, Math.ceil(foe.hp)) + '/' + foe.max + (foe.guard && foe.open <= 0 ? (lang() === 'en' ? ' · shield' : ' · щит') : '');
     }
     if ($('room-blurb')) {
       $('room-blurb').textContent = between
@@ -370,7 +372,7 @@
         ? (lang() === 'en' ? 'Floor boss' : 'Босс этажа')
         : (lang() === 'en' ? 'Clear the room' : 'Зачисти комнату');
     }
-    if ($('quest-count')) $('quest-count').textContent = (state.fight + 1) + ' / ' + book.foes.length;
+    if ($('quest-count')) $('quest-count').textContent = (state.chapter + 1) + '/' + CHAPTERS.length + ' · ' + (state.fight + 1) + '/' + book.foes.length;
     var ratio = book.foes.length ? state.fight / book.foes.length : 0;
     if ($('quest-fill')) $('quest-fill').style.width = (ratio * 100) + '%';
     if ($('money-value')) $('money-value').textContent = String(state.gold);
@@ -408,7 +410,12 @@
     if ($('rpg-foe-name')) $('rpg-foe-name').textContent = foe.name;
     if ($('rpg-foe-hp')) $('rpg-foe-hp').textContent = Math.max(0, Math.ceil(foe.hp)) + '/' + foe.max;
     if ($('rpg-hero-fill')) $('rpg-hero-fill').style.width = Math.max(0, state.hp / heroMax * 100) + '%';
-    if ($('rpg-foe-fill')) $('rpg-foe-fill').style.width = Math.max(0, foe.hp / foe.max * 100) + '%';
+    if ($('rpg-foe-fill')) {
+      $('rpg-foe-fill').style.width = Math.max(0, foe.hp / foe.max * 100) + '%';
+      $('rpg-foe-fill').style.background = foe.guard && foe.open <= 0
+        ? 'linear-gradient(90deg, #8a6a22, #e4b15a)'
+        : 'linear-gradient(90deg, #6a2a3a, #d46a6a)';
+    }
     var healBtn = $('rpg-heal');
     if (healBtn) {
       healBtn.disabled = healCd > 0 || ended;
@@ -420,13 +427,16 @@
     if (note) {
       var last = blow && blow.text ? blow.text : '';
       var series = state.streak > 0 ? (lang() === 'en' ? 'Chain ' : 'Серия ') + state.streak : '';
+      var open = foe.guard && foe.open > 0
+        ? (lang() === 'en' ? 'Shield open ' : 'Щит открыт ') + Math.ceil(foe.open)
+        : '';
       note.textContent = telegraph
         ? (foe.guard && foe.open <= 0
           ? (lang() === 'en' ? 'Parry — break the shield' : 'Парируй — сломай щит')
           : (lang() === 'en' ? 'Parry now' : 'Парируй'))
         : (foe.guard && foe.open <= 0
           ? (lang() === 'en' ? 'Shield — hit the wind-up' : 'Щит — бей в замах')
-          : [series, last].filter(Boolean).join(' · ') || (lang() === 'en' ? 'Wait for the wind-up' : 'Жди замах'));
+          : [open, series, last].filter(Boolean).join(' · ') || (lang() === 'en' ? 'Wait for the wind-up' : 'Жди замах'));
     }
     var list = $('orders-list');
     if (list && list.dataset.rpg !== gearSignature()) {
