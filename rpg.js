@@ -179,6 +179,8 @@
       xp: def.xp,
       gold: def.gold,
       boss: !!def.boss,
+      guard: !!def.boss,
+      open: 0,
       windup: 0.35,
       hue: (state.chapter * 48 + state.fight * 28) % 360,
       shape: [['dust', 'pipe', 'brute'], ['ooze', 'golem', 'brute'], ['beast', 'moth', 'brute'], ['shade', 'mimic', 'brute'], ['ghost', 'drone', 'brute'], ['imp', 'keys', 'brute'], ['siren', 'hawk', 'warden']][state.chapter][state.fight]
@@ -346,8 +348,10 @@
       $('room-next').textContent = between
         ? between.text
         : telegraph
-          ? (lang() === 'en' ? 'Wind-up — strike to parry!' : 'Замах — бей, чтобы парировать!')
-          : foe.name + '  ' + Math.max(0, Math.ceil(foe.hp)) + '/' + foe.max;
+          ? (foe.guard && foe.open <= 0
+            ? (lang() === 'en' ? 'Parry — break the shield!' : 'Парируй — сломай щит!')
+            : (lang() === 'en' ? 'Wind-up — strike to parry!' : 'Замах — бей, чтобы парировать!'))
+          : foe.name + '  ' + Math.max(0, Math.ceil(foe.hp)) + '/' + foe.max + (foe.guard && foe.open <= 0 ? (lang() === 'en' ? ' · shield' : ' · щит') : '');
     }
     if ($('room-blurb')) {
       $('room-blurb').textContent = between
@@ -417,8 +421,12 @@
       var last = blow && blow.text ? blow.text : '';
       var series = state.streak > 0 ? (lang() === 'en' ? 'Chain ' : 'Серия ') + state.streak : '';
       note.textContent = telegraph
-        ? (lang() === 'en' ? 'Parry now' : 'Парируй')
-        : [series, last].filter(Boolean).join(' · ') || (lang() === 'en' ? 'Wait for the wind-up' : 'Жди замах');
+        ? (foe.guard && foe.open <= 0
+          ? (lang() === 'en' ? 'Parry — break the shield' : 'Парируй — сломай щит')
+          : (lang() === 'en' ? 'Parry now' : 'Парируй'))
+        : (foe.guard && foe.open <= 0
+          ? (lang() === 'en' ? 'Shield — hit the wind-up' : 'Щит — бей в замах')
+          : [series, last].filter(Boolean).join(' · ') || (lang() === 'en' ? 'Wait for the wind-up' : 'Жди замах'));
     }
     var list = $('orders-list');
     if (list && list.dataset.rpg !== gearSignature()) {
@@ -452,6 +460,13 @@
     var shape = foe.shape || 'brute';
     ctx.save();
     ctx.translate(x, y - (wind > 0.72 ? scale * 0.08 : 0));
+    if (foe.guard && foe.open <= 0) {
+      ctx.strokeStyle = 'rgba(228, 177, 90, 0.9)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(0, scale * 0.35, scale * 0.72, scale * 0.78, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath();
     ctx.ellipse(0, scale * 0.95, scale * 0.5, scale * 0.12, 0, 0, Math.PI * 2);
@@ -715,6 +730,9 @@
       power *= 1.7;
     }
     if (state.boost) power *= 2;
+    var shielded = foe.guard && foe.open <= 0 && !parried;
+    if (shielded) power *= 0.35;
+    if (parried && foe.guard) foe.open = 2.6;
     var damage = Math.max(1, Math.round(power));
     foe.hp -= damage;
     hitFlash = 0.18;
@@ -725,7 +743,9 @@
       ? (lang() === 'en' ? 'Finisher ' : 'Приём ')
       : parried
         ? (lang() === 'en' ? 'Parry ' : 'Пари ')
-        : crit
+        : shielded
+          ? (lang() === 'en' ? 'Shield ' : 'Щит ')
+          : crit
           ? (lang() === 'en' ? 'Crit ' : 'Крит ')
           : '';
     blow = { text: word + damage, left: 0.85, crit: crit || finisher };
@@ -885,6 +905,7 @@
       blow.left -= dt;
       if (blow.left <= 0) blow = null;
     }
+    if (foe.open > 0) foe.open -= dt;
     var telegraph = foe.windup >= foe.gap - 0.55;
     var boost = state.autoUntil && performance.now() < state.autoUntil;
     if (!telegraph) {
