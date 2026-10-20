@@ -2225,7 +2225,7 @@
     ctx.restore();
   }
 
-  function drawLine(ctx, text, anchorX, anchorY, maxW) {
+  function drawLine(ctx, text, anchorX, anchorY, maxW, hot) {
     if (!text || !ctx.canvas || ctx.canvas.height < 150) return;
     ctx.save();
     ctx.font = '600 13px sans-serif';
@@ -2261,7 +2261,7 @@
     roundRect(ctx, left, top, width, height, 14);
     ctx.fillStyle = 'rgba(255, 248, 236, 0.95)';
     ctx.fill();
-    ctx.strokeStyle = 'rgba(90, 62, 36, 0.45)';
+    ctx.strokeStyle = hot ? 'rgba(142, 174, 134, 0.95)' : 'rgba(90, 62, 36, 0.45)';
     ctx.lineWidth = 1.5;
     ctx.stroke();
     ctx.fillStyle = '#2a2118';
@@ -2359,7 +2359,7 @@
     if (model && model.guest) {
       drawGuest(ctx, R, t, model.mood, model.client, model.arrive, model.pose);
       var mouth = floorPt(R, 0.62, 0.22);
-      drawLine(ctx, model.line, mouth[0], mouth[1], Math.min(280, w * 0.58));
+      drawLine(ctx, model.line, mouth[0], mouth[1], Math.min(280, w * 0.58), model.hot);
     }
     if (model && model.client) {
       var lamp = floorPt(R, 0.8, 0.4);

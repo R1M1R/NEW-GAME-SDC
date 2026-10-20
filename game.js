@@ -1442,14 +1442,27 @@
     return Math.max(0, Math.min(1, (performance.now() - guestArrived) / 900));
   }
 
+  var leadSeen = null;
+
+  function readyVoice(client) {
+    if (!client) return '';
+    var id = client.charAt(0).toUpperCase() + client.slice(1);
+    return labelOr('design.ready' + id, '');
+  }
+
   function drawRoom(time) {
     var box = fitCanvas(nodes.room);
     if (!box) return;
     var client = visitActive() ? visitClient : waitingClient();
     var views = orderViews();
     var lead = views[0];
-    var happy = visitActive() || rehearseActive() || performance.now() < sceneJoyUntil || !!(lead && lead.ready);
+    var leadReady = !!(lead && lead.ready);
+    if (leadSeen === null) leadSeen = leadReady;
+    else if (leadReady && !leadSeen) roomFlashUntil = performance.now() + 800;
+    leadSeen = leadReady;
+    var happy = visitActive() || rehearseActive() || performance.now() < sceneJoyUntil || leadReady;
     var voice = visitLine();
+    if (!voice && leadReady) voice = readyVoice(lead.order.client);
     if (!voice && lead) voice = clientWhy(lead.order);
     if (!voice) voice = i18n.t('design.scene' + ((state.scene || 0) % 4));
     art.paintRoom(nodes.room.getContext('2d'), box.w, box.h, {
@@ -1461,7 +1474,8 @@
       client: client,
       arrive: guestArrive(),
       line: voice,
-      pose: ['place', 'pair', 'deliver', 'clap'][(state.scene || 0) % 4],
+      pose: leadReady ? 'clap' : ['place', 'pair', 'deliver', 'clap'][(state.scene || 0) % 4],
+      hot: leadReady && !visitActive(),
       props: state.setDress || 0,
       pieces: stagedPieces(),
       ghosts: ghostNeeds(),
