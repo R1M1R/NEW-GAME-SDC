@@ -1581,7 +1581,7 @@
     nodes.roomName.textContent = i18n.t('rooms.' + tier + '.name');
     var pieces = stagedPieces();
     noteStage(pieces);
-    var scene = visitLine() || stageLine();
+    var scene = stageLine();
     nodes.roomBlurb.textContent = scene || i18n.t('rooms.' + tier + '.blurb');
     if (nodes.roomChapter) nodes.roomChapter.textContent = scene || labelOr('rooms.' + tier + '.beat', nodes.roomBlurb.textContent);
     if (nodes.roomNext) nodes.roomNext.textContent = contractLine();
@@ -1969,7 +1969,13 @@
       button.className = 'order-submit';
       button.disabled = !view.ready;
       var verb = document.createElement('b');
-      verb.textContent = i18n.t(view.ready ? 'design.submit' : 'design.locked');
+      var missing = '';
+      for (var miss = 0; miss < view.lines.length; miss += 1) {
+        if (view.lines[miss].have) continue;
+        missing = itemShort(view.lines[miss].level);
+        break;
+      }
+      verb.textContent = view.ready ? i18n.t('design.submit') : (missing ? i18n.t('design.needShort', { item: missing }) : i18n.t('design.locked'));
       var prize = document.createElement('small');
       prize.className = 'order-pay';
       prize.textContent = i18n.t('design.reward', {
@@ -2184,7 +2190,7 @@
     var seconds = String(Math.ceil(state.feverLeftMs / 1000));
     var left = i18n.t('design.feverLeft', { sec: seconds });
     if (!left || left === 'design.feverLeft') left = seconds + (i18n.lang === 'en' ? 's' : ' с');
-    var slate = nextMove();
+    var slate = visitLine() || nextMove();
     nodes.inspireLabel.textContent = fever ? feverName + ' ' + left : slate;
   }
 

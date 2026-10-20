@@ -2122,7 +2122,7 @@
   }
 
   function drawGuest(ctx, R, time, mood, client, arrive, pose) {
-    var p = floorPt(R, 0.72, 0.5);
+    var p = floorPt(R, 0.84, 0.72);
     var h = Math.max(22, R.bh * 0.78);
     var shown = arrive == null ? 1 : Math.max(0, Math.min(1, arrive));
     var x = p[0] + (1 - shown) * h * 1.6;
@@ -2404,7 +2404,7 @@
 
   function guestRect(w, h) {
     var R = makeRoom(w, h);
-    var p = floorPt(R, 0.72, 0.5);
+    var p = floorPt(R, 0.84, 0.72);
     var tall = Math.max(22, R.bh * 0.78);
     var rw = Math.max(36, tall * 0.7);
     var rh = Math.max(36, tall * 0.86);
