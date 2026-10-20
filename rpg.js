@@ -167,19 +167,44 @@
     return Math.min(0.55, gearBonus().crit + state.luck * 0.03);
   }
 
+  function roomLook() {
+    var ch = Math.max(0, Math.min(CHAPTERS.length - 1, state.chapter | 0));
+    var looks = [
+      { maxLevel: 0, style: 0, level: 0, props: 0 },
+      { maxLevel: 3, style: 1, level: 1, props: 1 },
+      { maxLevel: 5, style: 1, level: 2, props: 2 },
+      { maxLevel: 7, style: 2, level: 3, props: 2 },
+      { maxLevel: 10, style: 2, level: 4, props: 3 },
+      { maxLevel: 12, style: 3, level: 5, props: 3 },
+      { maxLevel: 15, style: 3, level: 6, props: 4 }
+    ];
+    var L = looks[ch];
+    var zone = { style: L.style, level: L.level };
+    return {
+      maxLevel: L.maxLevel,
+      rentLevel: 0,
+      zones: { light: zone, soft: zone, floor: zone, tech: zone, window: zone },
+      props: L.props,
+      flash: hitFlash > 0
+    };
+  }
+
   function makeFoe() {
     var def = foeDef();
     var cycle = state.cycle || 0;
-    var scale = 1 + cycle * 0.22;
+    var scale = Math.pow(1.42, cycle);
+    var hits = def.boss ? 7.5 : 3.4;
+    var floorHp = Math.round(attackPower() * hits * (0.85 + cycle * 0.2));
+    var max = Math.max(Math.round(def.hp * scale), floorHp);
     foe = {
       name: tx(def),
       line: tx(def.line),
-      max: Math.round(def.hp * scale),
-      hp: Math.round(def.hp * scale),
-      atk: Math.round(def.atk * scale),
-      gap: Math.max(0.95, def.gap - cycle * 0.04),
-      xp: Math.round(def.xp * (1 + cycle * 0.15)),
-      gold: Math.round(def.gold * (1 + cycle * 0.12)),
+      max: max,
+      hp: max,
+      atk: Math.max(1, Math.round(def.atk * scale + cycle * 2)),
+      gap: Math.max(0.92, def.gap - cycle * 0.05),
+      xp: Math.round(def.xp * (1 + cycle * 0.22)),
+      gold: Math.round(def.gold * (1 + cycle * 0.18)),
       boss: !!def.boss,
       guard: !!def.boss,
       open: 0,
@@ -689,14 +714,11 @@
     if (canvas.width !== w) canvas.width = w;
     if (canvas.height !== h) canvas.height = h;
     var ctx = canvas.getContext('2d');
-    var book = chapter();
-    art.paintRoom(ctx, w, h, {
-      maxLevel: book.tier,
-      rentLevel: 0,
-      zones: state.zones,
-      guest: false,
-      flash: hitFlash > 0
-    }, time);
+    art.paintRoom(ctx, w, h, roomLook(), time);
+    if (!between && foe && foe.open > 0 && foe.hp > 0) {
+      ctx.fillStyle = 'rgba(120, 170, 110, 0.12)';
+      ctx.fillRect(0, 0, w, h);
+    }
     if (h < 90) return;
     var wind = foe.gap ? foe.windup / foe.gap : 0;
     var heroX = w * 0.30 + heroLunge * 22;
@@ -780,6 +802,10 @@
     if (finisher) {
       power *= 2.6;
       state.rage = 0;
+      if (foe.guard && foe.open <= 0) {
+        foe.open = 2.4;
+        toast(lang() === 'en' ? 'Finisher cracks the shield!' : 'Приём ломает щит!');
+      }
     } else if (!fromAuto) {
       state.rage = Math.min(100, state.rage + 22);
     }
@@ -797,7 +823,7 @@
       power *= 1.7;
     }
     if (state.boost) power *= 2;
-    var shielded = foe.guard && foe.open <= 0 && !parried;
+    var shielded = foe.guard && foe.open <= 0 && !parried && !finisher;
     if (shielded) power *= 0.35;
     if (parried) foe.open = foe.guard ? 2.8 : 1.55;
     var vulnerable = foe.open > 0 && !shielded;
@@ -807,8 +833,12 @@
     if (foe.boss && foe.phase < 1 && foe.hp <= foe.max * 0.5) {
       foe.phase = 1;
       foe.guard = true;
-      foe.open = 0;
-      toast(lang() === 'en' ? 'The boss raises a second shield.' : 'Босс поднимает второй щит.');
+      if (foe.open > 0) {
+        toast(lang() === 'en' ? 'Second shield waits — unload now!' : 'Второй щит ждёт — бей сейчас!');
+      } else {
+        foe.open = 0;
+        toast(lang() === 'en' ? 'The boss raises a second shield.' : 'Босс поднимает второй щит.');
+      }
     }
     hitFlash = 0.18;
     heroLunge = 1;
@@ -881,14 +911,20 @@
   function maybeAutoEquip() {
     if (!state.offer) return;
     var prev = state.gear[state.offer.slot];
-    if (scoreGear(state.offer) <= scoreGear(prev)) return;
-    state.gear[state.offer.slot] = state.offer;
-    state.offer = null;
-    if (state.hp > maxHp()) state.hp = maxHp();
-    toast(lang() === 'en' ? 'Better gear equipped.' : 'Лучшее снаряжение надето.');
-    if (prev) state.gold += 12 + (prev.atk || 0) * 6;
     var list = $('orders-list');
-    if (list) list.dataset.rpg = '';
+    if (scoreGear(state.offer) > scoreGear(prev)) {
+      state.gear[state.offer.slot] = state.offer;
+      state.offer = null;
+      if (state.hp > maxHp()) state.hp = maxHp();
+      toast(lang() === 'en' ? 'Better gear equipped.' : 'Лучшее снаряжение надето.');
+      if (prev) state.gold += 12 + (prev.atk || 0) * 6;
+      if (list) list.dataset.rpg = '';
+      return;
+    }
+    var price = 18 + (state.offer.atk || 0) * 8 + (state.offer.hp || 0);
+    state.gold += price;
+    state.offer = null;
+    toast(lang() === 'en' ? 'Sold junk · +' + price : 'Хлам продан · +' + price);
   }
 
   function winFight() {
@@ -919,9 +955,6 @@
       maybeAutoEquip();
     }
     if (def.boss) {
-      var cycle = ['light', 'soft', 'floor', 'tech', 'window'];
-      var id = cycle[state.chapter % cycle.length];
-      state.zones[id] = { style: state.chapter >= 4 ? 3 : state.chapter >= 2 ? 2 : 1, level: Math.min(6, state.chapter + 1) };
       if (state.chapter >= CHAPTERS.length - 1) {
         ended = true;
         toast(lang() === 'en' ? 'The roof key is yours.' : 'Ключ от крыши твой.');
@@ -929,7 +962,7 @@
         state.chapter += 1;
         state.fight = 0;
         state.seenIntro = false;
-        toast(tx(chapter()));
+        toast((lang() === 'en' ? 'Floor clear · ' : 'Этаж чист · ') + tx(chapter()));
       }
     } else {
       state.fight += 1;
@@ -1099,8 +1132,8 @@
       var note = document.createElement('p');
       note.className = 'sheet-note';
       note.textContent = lang() === 'en'
-        ? 'Strike fills rage. At 100% the button becomes a finisher. Parry the wind-up to open a ×1.55 window. Bosses also raise a shield — break it, then unload. Bandage heals a third of your health.'
-        : 'Удары копят ярость. На 100% кнопка становится приёмом. Парируй замах — открывается окно ×1.55. У боссов ещё щит: сломай и разряжай. Бинт лечит треть здоровья.';
+        ? 'Strike fills rage. Finisher cracks boss shields. Parry the wind-up for a ×1.55 window. Each floor dresses the room. After the roof, Again starts a harder cycle. Bandage heals a third of your health.'
+        : 'Удары копят ярость. Приём ломает щит босса. Парируй замах — окно ×1.55. Каждый этаж меняет комнату. После крыши «Ещё круг» делает дом злее. Бинт лечит треть здоровья.';
       scroll.appendChild(note);
     }
     render();
@@ -1202,6 +1235,7 @@
     }
     state = load();
     state.hp = Math.min(maxHp(), state.hp);
+    maybeAutoEquip();
     makeFoe();
     bind();
     render();
