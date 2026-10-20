@@ -113,6 +113,7 @@
   var saveAcc = 0;
   var ended = false;
   var between = null;
+  var blow = null;
 
   function $(id) { return document.getElementById(id); }
 
@@ -182,6 +183,7 @@
       hue: (state.chapter * 48 + state.fight * 28) % 360,
       shape: [['dust', 'pipe', 'brute'], ['ooze', 'golem', 'brute'], ['beast', 'moth', 'brute'], ['shade', 'mimic', 'brute'], ['ghost', 'drone', 'brute'], ['imp', 'keys', 'brute'], ['siren', 'hawk', 'warden']][state.chapter][state.fight]
     };
+    state.streak = 0;
     ended = false;
   }
 
@@ -203,7 +205,8 @@
       offer: null,
       zones: { light: { style: 0, level: 0 }, soft: { style: 0, level: 0 }, floor: { style: 0, level: 0 }, tech: { style: 0, level: 0 }, window: { style: 0, level: 0 } },
       seenIntro: false,
-      wins: 0
+      wins: 0,
+      streak: 0
     };
   }
 
@@ -226,6 +229,8 @@
       if (raw.offer && raw.offer.slot) next.offer = raw.offer;
       if (raw.zones) next.zones = raw.zones;
       next.seenIntro = !!raw.seenIntro;
+      next.wins = Math.max(0, next.wins | 0);
+      next.streak = Math.max(0, raw.streak | 0);
       next.hp = Math.max(1, Math.min(maxHpOf(next), next.hp));
       return next;
     } catch (error) {
@@ -409,9 +414,11 @@
     }
     var note = $('rpg-parry');
     if (note) {
+      var last = blow && blow.text ? blow.text : '';
+      var series = state.streak > 0 ? (lang() === 'en' ? 'Chain ' : 'Серия ') + state.streak : '';
       note.textContent = telegraph
         ? (lang() === 'en' ? 'Parry now' : 'Парируй')
-        : (lang() === 'en' ? 'Wait for the wind-up' : 'Жди замах');
+        : [series, last].filter(Boolean).join(' · ') || (lang() === 'en' ? 'Wait for the wind-up' : 'Жди замах');
     }
     var list = $('orders-list');
     if (list && list.dataset.rpg !== gearSignature()) {
@@ -655,6 +662,14 @@
     var barY = foot - scale * 1.35;
     drawMeter(ctx, heroX - barW / 2, barY, barW, Math.max(0, state.hp / maxHp()), '#e4b15a');
     drawMeter(ctx, foeX - barW / 2, barY, barW, Math.max(0, foe.hp / foe.max), '#d46a6a');
+    if (blow && blow.left > 0 && h > 120) {
+      ctx.save();
+      ctx.font = '700 ' + Math.max(16, Math.round(scale * 0.42)) + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = blow.crit ? '#ffe08a' : '#fff6e8';
+      ctx.fillText(blow.text, foeX, barY - 8);
+      ctx.restore();
+    }
   }
 
   function drawMeter(ctx, x, y, w, ratio, color) {
@@ -688,12 +703,17 @@
     }
     var telegraph = foe.windup >= foe.gap - 0.48;
     var parried = false;
+    var crit = false;
     if (!fromAuto && telegraph) {
       parried = true;
       foe.windup = 0;
-      power *= 1.45;
+      state.streak = (state.streak || 0) + 1;
+      power *= 1.45 + Math.min(0.6, (state.streak - 1) * 0.12);
     }
-    if (!fromAuto && Math.random() < critChance()) power *= 1.7;
+    if (!fromAuto && Math.random() < critChance()) {
+      crit = true;
+      power *= 1.7;
+    }
     if (state.boost) power *= 2;
     var damage = Math.max(1, Math.round(power));
     foe.hp -= damage;
@@ -701,7 +721,15 @@
     heroLunge = 1;
     if (!fromAuto) swing = 0.28;
     if (audio && audio.playMerge) audio.playMerge(finisher ? 3 : 1);
-    floatAt((parried ? (lang() === 'en' ? 'Parry ' : 'Пари ') : '') + damage, finisher ? 'gold' : 'fire');
+    var word = finisher
+      ? (lang() === 'en' ? 'Finisher ' : 'Приём ')
+      : parried
+        ? (lang() === 'en' ? 'Parry ' : 'Пари ')
+        : crit
+          ? (lang() === 'en' ? 'Crit ' : 'Крит ')
+          : '';
+    blow = { text: word + damage, left: 0.85, crit: crit || finisher };
+    floatAt(blow.text, finisher || crit ? 'gold' : 'fire');
     if (juice && juice.shake) juice.shake(finisher ? 8 : 3);
     if (foe.hp <= 0) winFight();
     render();
@@ -712,6 +740,7 @@
     var damage = Math.max(1, foe.atk - defense());
     state.hp -= damage;
     foeLunge = 1;
+    state.streak = 0;
     if (audio && audio.playSpawn) audio.playSpawn();
     floatAt('-' + damage, 'star');
     if (state.hp <= 0) {
@@ -750,7 +779,8 @@
   function winFight() {
     var book = chapter();
     var def = foeDef();
-    var gold = def.gold + state.level * 2;
+    var chainGold = (state.streak || 0) * 6;
+    var gold = def.gold + state.level * 2 + chainGold;
     var xp = def.xp;
     state.gold += gold;
     state.gems += def.boss ? 2 : 0;
@@ -792,6 +822,7 @@
     between = {
       left: 1.15,
       text: '+' + gold + (lang() === 'en' ? ' gold · +' : ' золота · +') + xp + (lang() === 'en' ? ' xp' : ' опыта')
+        + (chainGold ? (lang() === 'en' ? ' · chain ' : ' · серия ') + state.streak : '')
     };
     foe.hp = 0;
     save();
@@ -850,6 +881,10 @@
     hitFlash = Math.max(0, hitFlash - dt);
     heroLunge = Math.max(0, heroLunge - dt * 3.4);
     foeLunge = Math.max(0, foeLunge - dt * 3.2);
+    if (blow) {
+      blow.left -= dt;
+      if (blow.left <= 0) blow = null;
+    }
     var telegraph = foe.windup >= foe.gap - 0.55;
     var boost = state.autoUntil && performance.now() < state.autoUntil;
     if (!telegraph) {
