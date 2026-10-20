@@ -200,10 +200,17 @@
   }
 
   function orderRelevant(order, counts, spawn) {
-    if (coversNeeds(order.needs, counts)) return true;
+    var left = {};
+    var keys = Object.keys(counts);
+    for (var i = 0; i < keys.length; i += 1) left[keys[i]] = counts[keys[i]];
     for (var n = 0; n < order.needs.length; n += 1) {
-      var level = order.needs[n];
-      if (!counts[level] && level !== spawn) return false;
+      var key = String(order.needs[n]);
+      if (left[key]) {
+        left[key] -= 1;
+        continue;
+      }
+      if (order.needs[n] === spawn) continue;
+      return false;
     }
     return true;
   }
@@ -302,13 +309,7 @@
         continue;
       }
       var missingFromBoard = !orderRelevant(order, full, spawn);
-      if (missingFromBoard) {
-        if (!order.missSince) {
-          order.missSince = now;
-          continue;
-        }
-        if (now - order.missSince < 4000) continue;
-      }
+      if (missingFromBoard && !order.missSince) order.missSince = now - 5000;
       var exclude = [];
       var avoid = '';
       for (var n = 0; n < state.orders.length; n += 1) {
@@ -323,7 +324,10 @@
       holdPieces(counts, next.needs, reserved);
       changed = true;
     }
-    if (changed) ordersSig = '';
+    if (changed) {
+      ordersSig = '';
+      renderOrders();
+    }
   }
 
   function seedOrders(source) {
