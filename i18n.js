@@ -128,6 +128,8 @@
         visitLera: 'Лера ставит букет на столик.',
         staged: 'В комнате теперь {item}.',
         noticed: '{name} увидел «{item}».',
+        rehearse: 'Репетиция! 12 секунд поставка бесплатная.',
+        rehearseWait: 'Клиент переводит дух.',
         purr: 'Мррр'
       },
       nav: {
@@ -691,6 +693,8 @@
         visitLera: 'Lera sets a bouquet on the table.',
         staged: 'The room now has a {item}.',
         noticed: '{name} spotted the {item}.',
+        rehearse: 'Rehearsal! Free deliveries for 12 seconds.',
+        rehearseWait: 'The client is catching their breath.',
         purr: 'Purr'
       },
       nav: {

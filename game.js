@@ -882,7 +882,8 @@
       if (hardPaused()) return;
     } else if (platform && platform.pause && platform.pause.active) return;
     var fever = state.feverLeftMs > 0;
-    if (!fever && state.energy < 1) {
+    var rehearsal = rehearseActive();
+    if (!fever && !rehearsal && state.energy < 1) {
       deny(nodes.spawn);
       toast(i18n.t('play.noEnergy'));
       syncEnergyOffer();
@@ -896,7 +897,7 @@
     }
     var count = Math.min(spawnCount(), holes.length);
     var level = Math.min(14, 1 + state.upgrades.base + (fever ? 1 : 0));
-    if (!fever) state.energy -= 1;
+    if (!fever && !rehearsal) state.energy -= 1;
     for (var i = 0; i < count; i += 1) {
       var pick = holes.splice(Math.floor(Math.random() * holes.length), 1)[0];
       state.grid[pick] = level;
@@ -1108,7 +1109,7 @@
       rentLevel: state.upgrades.rent,
       zones: state.zones,
       guest: !!client,
-      mood: visitActive() ? 'joy' : 'wait',
+      mood: (visitActive() || rehearseActive()) ? 'joy' : 'wait',
       client: client,
       pieces: stagedPieces(),
       ghosts: ghostNeeds()
@@ -2375,6 +2376,34 @@
     cell.classList.add('is-hint');
   }
 
+  var rehearseUntil = 0;
+  var rehearseNext = 0;
+
+  function rehearseActive() {
+    return performance.now() < rehearseUntil;
+  }
+
+  function pokeGuest(event) {
+    if (!art.guestRect || !nodes.room || !waitingClient()) return false;
+    var rect = nodes.room.getBoundingClientRect();
+    var hit = art.guestRect(rect.width, rect.height);
+    var x = event.clientX - rect.left;
+    var y = event.clientY - rect.top;
+    if (x < hit.x || y < hit.y || x > hit.x + hit.w || y > hit.y + hit.h) return false;
+    var now = performance.now();
+    if (now < rehearseNext) {
+      if (juice) juice.floatText(event.clientX, event.clientY - 12, i18n.t('design.rehearseWait'), 'gold');
+      audio.playSpawn();
+      return true;
+    }
+    rehearseUntil = now + 12000;
+    rehearseNext = now + 45000;
+    toast(i18n.t('design.rehearse'));
+    audio.playUpgrade();
+    if (nodes.spawn) nodes.spawn.classList.add('is-rehearse');
+    return true;
+  }
+
   function pokeCat(event) {
     if (!art.catRect || !nodes.room) return false;
     var rect = nodes.room.getBoundingClientRect();
@@ -2413,6 +2442,7 @@
     if (juice) juice.step(dt);
     if (animTime - lastDraw >= 0.05) {
       lastDraw = animTime;
+      if (nodes.spawn) nodes.spawn.classList.toggle('is-rehearse', rehearseActive());
       if ((visitShown && !visitActive()) || (stageShown && performance.now() >= stageUntil)) {
         if (!visitActive()) visitShown = false;
         if (performance.now() >= stageUntil) stageShown = false;
@@ -2641,6 +2671,7 @@
         closeStyle();
         return;
       }
+      if (pokeGuest(event)) return;
       if (pokeCat(event)) return;
       nodes.roomSection.classList.remove('is-tap');
       void nodes.roomSection.offsetWidth;

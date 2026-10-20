@@ -2106,6 +2106,15 @@
     ctx.fillRect(0, 0, w, h);
   }
 
+  function guestRect(w, h) {
+    var R = makeRoom(w, h);
+    var p = floorPt(R, 0.8, 0.48);
+    var tall = Math.max(18, R.bh * 0.62);
+    var rw = Math.max(36, tall * 0.7);
+    var rh = Math.max(36, tall * 0.86);
+    return { x: p[0] - rw * 0.45, y: p[1] - rh, w: rw, h: rh };
+  }
+
   function catRect(w, h) {
     var R = makeRoom(w, h);
     var G = sofaGeom(R);
@@ -2148,6 +2157,7 @@
     paintToken: paintToken,
     paintRoom: paintRoom,
     visualTier: visualTier,
-    catRect: catRect
+    catRect: catRect,
+    guestRect: guestRect
   };
 })();

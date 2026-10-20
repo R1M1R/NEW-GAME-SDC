@@ -1905,6 +1905,10 @@ body.is-paused .app * {
   box-shadow: 0 0 0 2px #fff1c2, 0 0 18px rgba(255, 180, 60, 0.65);
 }
 
+.spawn-btn.is-rehearse {
+  box-shadow: 0 0 0 2px #f3d7b0, 0 0 18px rgba(243, 215, 176, 0.75);
+}
+
 .event-banner {
   position: absolute;
   z-index: 46;
