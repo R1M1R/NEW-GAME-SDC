@@ -766,6 +766,7 @@
   }
 
   function questTitle() {
+    if (questReady()) return i18n.t('play.questReady');
     var quest = state.quest;
     if (quest.type === 'discover') return i18n.t('play.questDiscover', { target: String(quest.target) });
     if (quest.type === 'earn') return i18n.t('play.questEarn', { target: formatCompact(quest.target) });
