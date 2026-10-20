@@ -565,7 +565,7 @@ body.is-paused .app * {
 
 .cell.is-pulse { animation: cell-pulse 0.38s ease; }
 
-.cell.is-pop { animation: cell-pop 0.32s ease; }
+.cell.is-pop { animation: cell-pop 0.44s cubic-bezier(0.2, 0.85, 0.2, 1); z-index: 3; }
 
 .spawn-row {
   display: grid;
@@ -706,7 +706,8 @@ body.is-paused .app * {
 }
 
 @keyframes cell-pop {
-  40% { transform: scale(1.12); }
+  0% { transform: scale(0.8); }
+  46% { transform: scale(1.24); }
   100% { transform: scale(1); }
 }
 

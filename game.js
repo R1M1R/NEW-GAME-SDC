@@ -830,6 +830,7 @@
     juice.floatText(point.x, point.y, '+' + formatCompact(payout) + ' 💰', 'gold');
     if (combo >= 2) juice.floatText(point.x, point.y - 20, i18n.t('monetize.combo', { n: String(combo) }), 'fire');
     if (combo >= 3) juice.shake(5 + combo * 1.4);
+    else juice.shake(3);
     juice.kick(index, 'merge');
   }
 
@@ -1330,7 +1331,7 @@
       rentLevel: state.upgrades.rent,
       zones: state.zones,
       guest: !!client,
-      mood: (visitActive() || rehearseActive()) ? 'joy' : 'wait',
+      mood: (visitActive() || rehearseActive() || performance.now() < sceneJoyUntil) ? 'joy' : 'wait',
       client: client,
       arrive: guestArrive(),
       line: i18n.t('design.scene' + ((state.scene || 0) % 4)),
@@ -1941,11 +1942,20 @@
     if (kind === 'tap' && step === 3) state.sceneTapped = (state.sceneTapped || 0) + 1;
   }
 
+  var sceneJoyUntil = 0;
+
   function settleScene() {
     var step = (state.scene || 0) % 4;
     var have = [state.sceneSpawn, state.sceneMerges, state.sceneDelivered, state.sceneTapped];
     if (!(have[step] > 0)) return;
-    toast(i18n.t('design.sceneDone'));
+    var gain = Math.max(80, Math.round(steadyIncome() * 12));
+    state.money = Math.min(MAX_MONEY, state.money + gain);
+    state.crystals = Math.min(MAX_CRYSTALS, state.crystals + 1);
+    roomFlashUntil = performance.now() + 900;
+    sceneJoyUntil = performance.now() + 2600;
+    audio.playCoin();
+    audio.playUpgrade();
+    toast(i18n.t('design.scenePay', { money: formatCompact(gain) }));
     state.scene = (state.scene || 0) + 1;
     state.sceneSpawn = 0;
     state.sceneMerges = 0;
