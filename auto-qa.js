@@ -22,6 +22,7 @@
   root.appendChild(panel);
   root.appendChild(toggle);
   document.body.appendChild(root);
+  if (!/[?&]qa=1(?:&|$)/.test(location.search)) root.hidden = true;
 
   function placeQA() {
     var room = document.querySelector('.room');

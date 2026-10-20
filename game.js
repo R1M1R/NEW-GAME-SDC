@@ -1173,7 +1173,8 @@
   }
 
   function fitCanvas(canvas) {
-    var rect = canvas.getBoundingClientRect();
+    var host = canvas.closest ? canvas.closest('.cell') : null;
+    var rect = (host || canvas).getBoundingClientRect();
     var dpr = Math.min(2, window.devicePixelRatio || 1);
     var w = Math.max(1, Math.round(rect.width * dpr));
     var h = Math.max(1, Math.round(rect.height * dpr));
@@ -1676,49 +1677,53 @@
     }
   }
 
+  function coverNeeds(needs, used, commit) {
+    var scratch = {};
+    var key;
+    for (key in used) scratch[key] = true;
+    var hits = [];
+    var ready = true;
+    for (var n = 0; n < needs.length; n += 1) {
+      var exact = -1;
+      var better = -1;
+      var betterLevel = 99;
+      for (var i = 0; i < CELLS; i += 1) {
+        if (scratch[i]) continue;
+        var level = state.grid[i];
+        if (!level) continue;
+        if (level === needs[n]) {
+          exact = i;
+          break;
+        }
+        if (level > needs[n] && level < betterLevel) {
+          better = i;
+          betterLevel = level;
+        }
+      }
+      var hit = exact >= 0 ? exact : better;
+      hits.push(hit);
+      if (hit < 0) ready = false;
+      else scratch[hit] = true;
+    }
+    if (ready && commit) {
+      for (var h = 0; h < hits.length; h += 1) used[hits[h]] = true;
+    }
+    return { hits: hits, ready: ready };
+  }
+
   function claimMap() {
     var used = {};
     var map = {};
     state.orders.forEach(function (order) {
-      var found = [];
-      for (var n = 0; n < order.needs.length; n += 1) {
-        var hit = -1;
-        for (var i = 0; i < CELLS; i += 1) {
-          if (used[i]) continue;
-          if (state.grid[i] === order.needs[n]) {
-            hit = i;
-            break;
-          }
-        }
-        if (hit < 0) {
-          found = null;
-          break;
-        }
-        used[hit] = true;
-        found.push(hit);
-      }
-      map[order.uid] = found;
+      var cover = coverNeeds(order.needs, used, true);
+      map[order.uid] = cover.ready ? cover.hits : null;
     });
     return map;
   }
 
   function findOrderCells(needs) {
-    var used = {};
-    var found = [];
-    for (var n = 0; n < needs.length; n += 1) {
-      var hit = -1;
-      for (var i = 0; i < CELLS; i += 1) {
-        if (used[i]) continue;
-        if (state.grid[i] === needs[n]) {
-          hit = i;
-          break;
-        }
-      }
-      if (hit < 0) return null;
-      used[hit] = true;
-      found.push(hit);
-    }
-    return found;
+    var cover = coverNeeds(needs, {}, true);
+    return cover.ready ? cover.hits : null;
   }
 
   function flyOrderPiece(index, card) {
@@ -1797,20 +1802,14 @@
   function orderViews() {
     var used = {};
     return state.orders.map(function (order) {
-      var lines = order.needs.map(function (level) {
-        var have = false;
-        for (var i = 0; i < CELLS; i += 1) {
-          if (used[i] || state.grid[i] !== level) continue;
-          used[i] = true;
-          have = true;
-          break;
-        }
-        return { level: level, have: have };
+      var cover = coverNeeds(order.needs, used, true);
+      var lines = order.needs.map(function (level, n) {
+        return { level: level, have: cover.hits[n] >= 0 };
       });
       return {
         order: order,
         lines: lines,
-        ready: lines.every(function (line) { return line.have; })
+        ready: cover.ready
       };
     });
   }
