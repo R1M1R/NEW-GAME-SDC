@@ -686,6 +686,13 @@ body.is-paused .app * {
   50% { transform: scale(1.07); }
 }
 
+#rpg-heal.is-urgent {
+  animation: perfect-pulse 0.45s ease-in-out infinite;
+  box-shadow: 0 0 0 2px rgba(214, 70, 60, 0.85);
+  color: #f6efe4;
+  background: linear-gradient(180deg, #8a3a32, #5a201c);
+}
+
 @keyframes open-pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); }

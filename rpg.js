@@ -115,6 +115,8 @@
   var between = null;
   var blow = null;
   var sparks = null;
+  var banner = null;
+  var hurtFlash = 0;
 
   function $(id) { return document.getElementById(id); }
 
@@ -238,7 +240,8 @@
       seenIntro: false,
       wins: 0,
       streak: 0,
-      cycle: 0
+      cycle: 0,
+      forge: 0
     };
   }
 
@@ -247,7 +250,7 @@
       var raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
       if (!raw || raw.v !== 1) return fresh();
       var next = fresh();
-      ['level', 'xp', 'hp', 'gold', 'gems', 'chapter', 'fight', 'rage', 'might', 'vital', 'luck', 'wins', 'cycle'].forEach(function (key) {
+      ['level', 'xp', 'hp', 'gold', 'gems', 'chapter', 'fight', 'rage', 'might', 'vital', 'luck', 'wins', 'cycle', 'forge'].forEach(function (key) {
         if (typeof raw[key] === 'number' && isFinite(raw[key])) next[key] = raw[key];
       });
       next.chapter = Math.max(0, Math.min(CHAPTERS.length - 1, next.chapter | 0));
@@ -476,6 +479,7 @@
       healBtn.textContent = healCd > 0
         ? (lang() === 'en' ? 'Bandage ' : 'Бинт ') + Math.ceil(healCd)
         : (lang() === 'en' ? 'Bandage' : 'Бинт');
+      healBtn.classList.toggle('is-urgent', !ended && healCd <= 0 && state.hp / heroMax < 0.38);
     }
     var note = $('rpg-parry');
     if (note) {
@@ -795,7 +799,7 @@
     }
     if (sparks && sparks.left > 0) {
       var life = sparks.left / 1.35;
-      var cx = foeX;
+      var cx = foe.hp <= 0 ? foeX : heroX;
       var cy = foot - scale * 0.55;
       for (var si = 0; si < sparks.bits.length; si += 1) {
         var bit = sparks.bits[si];
@@ -807,6 +811,31 @@
         ctx.arc(px, py, Math.max(1.5, scale * 0.06 * bit.s * life), 0, Math.PI * 2);
         ctx.fill();
       }
+    }
+    if (hurtFlash > 0) {
+      ctx.fillStyle = 'rgba(160, 40, 40, ' + (hurtFlash * 0.45) + ')';
+      ctx.fillRect(0, 0, w, h * 0.12);
+      ctx.fillRect(0, h * 0.88, w, h * 0.12);
+    }
+    if (state.hp / maxHp() < 0.38 && !between && !ended) {
+      ctx.fillStyle = 'rgba(140, 30, 30, 0.14)';
+      ctx.fillRect(0, 0, w, h);
+    }
+    if (banner && banner.left > 0) {
+      var alpha = Math.min(1, banner.left * 1.4);
+      ctx.fillStyle = 'rgba(18, 12, 8, ' + (0.55 * alpha) + ')';
+      ctx.fillRect(0, h * 0.28, w, h * 0.28);
+      ctx.fillStyle = 'rgba(244, 214, 150, ' + alpha + ')';
+      ctx.font = '700 ' + Math.max(18, Math.round(h * 0.07)) + 'px Georgia, serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(banner.title, w / 2, h * 0.4);
+      if (banner.sub) {
+        ctx.fillStyle = 'rgba(244, 239, 228, ' + (0.85 * alpha) + ')';
+        ctx.font = '500 ' + Math.max(12, Math.round(h * 0.032)) + 'px sans-serif';
+        var sub = banner.sub.length > 64 ? banner.sub.slice(0, 62) + '…' : banner.sub;
+        ctx.fillText(sub, w / 2, h * 0.48);
+      }
+      ctx.textAlign = 'left';
     }
     if (heroLunge > 0.2) {
       ctx.strokeStyle = 'rgba(244, 214, 150, 0.9)';
@@ -849,11 +878,49 @@
     state.hp = maxHp();
     between = null;
     makeFoe();
+    showBanner(
+      lang() === 'en' ? 'Cycle ' + state.cycle : 'Круг ' + state.cycle,
+      lang() === 'en' ? 'The house wakes harder.' : 'Дом злится сильнее.'
+    );
     toast(lang() === 'en'
       ? 'New cycle ' + state.cycle + ' — the house wakes harder.'
       : 'Новый круг ' + state.cycle + ' — дом злится сильнее.');
     save();
     render();
+  }
+
+  function forgeCost() {
+    return 55 + (state.forge || 0) * 40;
+  }
+
+  function forgeGear() {
+    var price = forgeCost();
+    if (state.gold < price) {
+      toast(lang() === 'en' ? 'Not enough gold.' : 'Мало золота.');
+      return;
+    }
+    var slots = ['weapon', 'charm', 'cloak'].filter(function (slot) { return state.gear[slot]; });
+    if (!slots.length) {
+      toast(lang() === 'en' ? 'Equip something first.' : 'Сначала надень снаряжение.');
+      return;
+    }
+    var slot = slots[Math.floor(Math.random() * slots.length)];
+    var item = state.gear[slot];
+    state.gold -= price;
+    state.forge = (state.forge || 0) + 1;
+    if (slot === 'weapon') item.atk = (item.atk || 0) + 1;
+    else if (slot === 'cloak') {
+      item.hp = (item.hp || 0) + 6;
+      item.def = (item.def || 0) + 1;
+    } else {
+      item.crit = Math.min(0.35, (item.crit || 0) + 0.03);
+    }
+    if (state.hp > maxHp()) state.hp = maxHp();
+    toast((lang() === 'en' ? 'Forged ' : 'Закалено: ') + itemName(item));
+    var list = $('orders-list');
+    if (list) list.dataset.rpg = '';
+    save();
+    openSheet('shop');
   }
 
   function attack(fromAuto) {
@@ -945,10 +1012,15 @@
     return true;
   }
 
+  function showBanner(title, sub) {
+    banner = { left: 1.7, title: title, sub: sub || '' };
+  }
+
   function hurt() {
     var damage = Math.max(1, foe.atk - defense());
     state.hp -= damage;
     foeLunge = 1;
+    hurtFlash = 0.35;
     state.streak = 0;
     if (audio && audio.playSpawn) audio.playSpawn();
     floatAt('-' + damage, 'star');
@@ -968,7 +1040,17 @@
       state.xp -= xpNeed();
       state.level += 1;
       state.hp = maxHp();
+      state.rage = Math.min(100, state.rage + 35);
       notes.push(lang() === 'en' ? 'Level ' + state.level : 'Уровень ' + state.level);
+      showBanner(
+        lang() === 'en' ? 'Level ' + state.level : 'Уровень ' + state.level,
+        lang() === 'en' ? 'Full heal · rage surge' : 'Полное лечение · всплеск ярости'
+      );
+      sparks = { left: 1.2, bits: [] };
+      var i;
+      for (i = 0; i < 14; i += 1) {
+        sparks.bits.push({ a: (Math.PI * 2 * i) / 14, r: 0.15 + Math.random() * 0.35, s: 0.7 + Math.random() * 0.6 });
+      }
     }
     if (notes.length) {
       toast(notes.join(' · '));
@@ -1019,7 +1101,7 @@
     state.gems += def.boss ? 2 : 0;
     state.wins += 1;
     gainXp(xp);
-    state.hp = Math.min(maxHp(), state.hp + Math.round(maxHp() * 0.28));
+    state.hp = Math.min(maxHp(), state.hp + Math.round(maxHp() * 0.16));
     if (audio && audio.playCoin) audio.playCoin();
     toast('+' + gold + (lang() === 'en' ? ' gold' : ' золота'));
     var drop = def.boss || Math.random() < 0.38;
@@ -1045,6 +1127,7 @@
         state.fight = 0;
         state.seenIntro = false;
         toast((lang() === 'en' ? 'Floor clear · ' : 'Этаж чист · ') + tx(chapter()));
+        showBanner(tx(chapter()), tx(chapter().intro));
       }
     } else {
       state.fight += 1;
@@ -1120,6 +1203,11 @@
       sparks.left -= dt;
       if (sparks.left <= 0) sparks = null;
     }
+    if (banner) {
+      banner.left -= dt;
+      if (banner.left <= 0) banner = null;
+    }
+    hurtFlash = Math.max(0, hurtFlash - dt);
     if (between) {
       between.left -= dt;
       if (between.left <= 0) finishBetween();
@@ -1206,6 +1294,7 @@
       });
     } else if (kind === 'shop') {
       title.textContent = lang() === 'en' ? 'Store' : 'Лавка';
+      addBuy(scroll, lang() === 'en' ? 'Forge gear' : 'Закалка снаряжения', lang() === 'en' ? 'Random equipped slot grows' : 'Случайный слот становится сильнее', forgeCost(), 'gold', forgeGear);
       addBuy(scroll, lang() === 'en' ? 'Bandage kit' : 'Набор бинтов', lang() === 'en' ? 'Full heal' : 'Полное лечение', 40, 'gold', function () {
         if (state.gold < 40) return toast(lang() === 'en' ? 'Not enough gold.' : 'Мало золота.');
         state.gold -= 40;
@@ -1244,7 +1333,7 @@
     var strong = document.createElement('strong');
     strong.textContent = name + ' — ' + detail;
     var span = document.createElement('span');
-    span.textContent = price + (pay === 'gem' ? (lang() === 'en' ? ' gems' : ' крист.') : (lang() === 'en' ? ' gold' : ' золота'));
+    span.textContent = '· ' + price + (pay === 'gem' ? (lang() === 'en' ? ' gems' : ' крист.') : (lang() === 'en' ? ' gold' : ' золота'));
     row.appendChild(strong);
     row.appendChild(span);
     row.addEventListener('click', onClick);
