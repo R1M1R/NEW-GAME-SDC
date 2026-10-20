@@ -1482,6 +1482,30 @@
     return labelOr('design.ready' + id, '');
   }
 
+  function nextMove(views) {
+    var list = views || orderViews();
+    var lead = list[0];
+    var i;
+    if (lead && lead.ready) {
+      return i18n.t('design.moveDeliver', {
+        name: i18n.t('clients.' + lead.order.client + '.name')
+      });
+    }
+    if (lead) {
+      for (i = 0; i < lead.lines.length; i += 1) {
+        if (lead.lines[i].have) continue;
+        return i18n.t('design.moveNeed', { item: itemShort(lead.lines[i].level) });
+      }
+    }
+    for (i = 0; i < CELLS; i += 1) {
+      var level = state.grid[i];
+      if (level && level < 15 && partnerOf(i) >= 0) {
+        return i18n.t('design.moveMerge', { item: itemShort(level) });
+      }
+    }
+    return i18n.t('design.moveSpawn');
+  }
+
   function drawRoom(time) {
     var box = fitCanvas(nodes.room);
     if (!box) return;
@@ -1493,10 +1517,7 @@
     else if (leadReady && !leadSeen) roomFlashUntil = performance.now() + 800;
     leadSeen = leadReady;
     var happy = visitActive() || rehearseActive() || performance.now() < sceneJoyUntil || leadReady;
-    var voice = visitLine();
-    if (!voice && leadReady) voice = readyVoice(lead.order.client);
-    if (!voice && lead) voice = clientWhy(lead.order);
-    if (!voice) voice = i18n.t('design.scene' + ((state.scene || 0) % 4));
+    var voice = visitLine() || nextMove(views);
     art.paintRoom(nodes.room.getContext('2d'), box.w, box.h, {
       maxLevel: discoveredMax(),
       rentLevel: state.upgrades.rent,
@@ -2162,7 +2183,7 @@
     var seconds = String(Math.ceil(state.feverLeftMs / 1000));
     var left = i18n.t('design.feverLeft', { sec: seconds });
     if (!left || left === 'design.feverLeft') left = seconds + (i18n.lang === 'en' ? 's' : ' с');
-    var slate = i18n.t('design.scene' + ((state.scene || 0) % 4));
+    var slate = nextMove();
     nodes.inspireLabel.textContent = fever ? feverName + ' ' + left : slate;
   }
 

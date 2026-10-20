@@ -2144,11 +2144,7 @@
     ellipse(ctx, x + h * 0.08, foot, h * 0.06, h * 0.03);
     ctx.fill();
     ctx.fillStyle = coat;
-    roundRect(ctx, x - h * 0.1, foot - h * 0.36, h * 0.08, h * 0.34, h * 0.04);
-    ctx.fill();
-    roundRect(ctx, x + h * 0.02, foot - h * 0.36, h * 0.08, h * 0.34, h * 0.04);
-    ctx.fill();
-    roundRect(ctx, x - h * 0.2, foot - h * 0.74, h * 0.4, h * 0.44, h * 0.14);
+    roundRect(ctx, x - h * 0.18, foot - h * 0.78, h * 0.36, h * 0.7, h * 0.16);
     ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     roundRect(ctx, x - h * 0.035, foot - h * 0.7, h * 0.07, h * 0.3, h * 0.03);
