@@ -598,12 +598,15 @@
     ctx.arc(-scale * 0.1, -scale * 0.46, scale * 0.045, 0, Math.PI * 2);
     ctx.arc(scale * 0.1, -scale * 0.46, scale * 0.045, 0, Math.PI * 2);
     ctx.fill();
-    if (kind === 'foe' && foe.boss) {
+    if (kind === 'hero' && state.gear && state.gear.weapon) {
       ctx.strokeStyle = '#e4b15a';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = Math.max(2, scale * 0.06);
       ctx.beginPath();
-      ctx.arc(0, -scale * 0.72, scale * 0.22, Math.PI, 0);
+      ctx.moveTo(scale * 0.22, scale * 0.15);
+      ctx.lineTo(scale * 0.55, scale * 0.55);
       ctx.stroke();
+      ctx.fillStyle = '#e4b15a';
+      ctx.fillRect(scale * 0.42, scale * 0.48, scale * 0.28, scale * 0.14);
     }
     ctx.restore();
   }
@@ -648,6 +651,20 @@
       ctx.lineTo(foeX - scale * 0.2, foot - scale * 0.55);
       ctx.stroke();
     }
+    var barW = Math.max(36, scale * 1.3);
+    var barY = foot - scale * 1.35;
+    drawMeter(ctx, heroX - barW / 2, barY, barW, Math.max(0, state.hp / maxHp()), '#e4b15a');
+    drawMeter(ctx, foeX - barW / 2, barY, barW, Math.max(0, foe.hp / foe.max), '#d46a6a');
+  }
+
+  function drawMeter(ctx, x, y, w, ratio, color) {
+    var h = 6;
+    ctx.fillStyle = 'rgba(12, 8, 6, 0.72)';
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, Math.max(0, w * Math.min(1, ratio)), h);
+    ctx.strokeStyle = 'rgba(255, 244, 220, 0.45)';
+    ctx.strokeRect(x, y, w, h);
   }
 
   function attack(fromAuto) {
@@ -833,12 +850,15 @@
     hitFlash = Math.max(0, hitFlash - dt);
     heroLunge = Math.max(0, heroLunge - dt * 3.4);
     foeLunge = Math.max(0, foeLunge - dt * 3.2);
+    var telegraph = foe.windup >= foe.gap - 0.55;
     var boost = state.autoUntil && performance.now() < state.autoUntil;
-    autoSwing += dt;
-    var tempo = boost ? 0.42 : 0.95;
-    if (autoSwing >= tempo) {
-      autoSwing = 0;
-      attack(true);
+    if (!telegraph) {
+      autoSwing += dt;
+      var tempo = boost ? 0.42 : 0.95;
+      if (autoSwing >= tempo) {
+        autoSwing = 0;
+        attack(true);
+      }
     }
     if (ended) return;
     foe.windup += dt;
