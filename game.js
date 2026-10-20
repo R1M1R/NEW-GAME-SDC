@@ -204,13 +204,20 @@
     var left = {};
     var keys = Object.keys(counts);
     for (var i = 0; i < keys.length; i += 1) left[keys[i]] = counts[keys[i]];
-    for (var n = 0; n < order.needs.length; n += 1) {
-      var key = String(order.needs[n]);
+    var needs = order.needs.slice().sort(function (a, b) { return b - a; });
+    for (var n = 0; n < needs.length; n += 1) {
+      var need = needs[n];
+      var key = String(need);
       if (left[key]) {
         left[key] -= 1;
         continue;
       }
-      if (order.needs[n] === spawn) continue;
+      if (need <= spawn + 1) continue;
+      var below = String(need - 1);
+      if (need > 1 && left[below] >= 1) {
+        left[below] -= 1;
+        continue;
+      }
       return false;
     }
     return true;
@@ -222,10 +229,13 @@
     return (x < y ? x : y) + ':' + (x < y ? y : x);
   }
 
-  function untwin(a, b, avoidKey) {
+  function untwin(a, b, avoidKey, spawn) {
     if (!avoidKey || needKey([a, b]) !== avoidKey) return [a, b];
+    spawn = spawn || 1;
+    if (a === b && a === spawn + 1) return [spawn, a];
+    if (a === b && a > spawn + 1) return [spawn, a];
+    if (a !== b) return [Math.min(a, b), Math.min(a, b)];
     if (b < 14) return [a, b + 1];
-    if (a > 1) return [a - 1, b];
     return [a, b];
   }
 
@@ -247,8 +257,13 @@
     var a;
     var b;
     if (climb) {
-      a = climb + 1;
-      b = climb + 1;
+      if (climb <= spawn) {
+        a = Math.min(14, spawn + 1);
+        b = a;
+      } else {
+        a = spawn;
+        b = Math.min(15, climb + 1);
+      }
     } else if (bag.length >= 2) {
       bag.sort(function (x, y) { return y - x; });
       var hero = Math.floor(Math.random() * Math.max(1, Math.ceil(bag.length / 3)));
@@ -266,7 +281,7 @@
       a = b;
       b = swap;
     }
-    var pair = untwin(a, b, avoidKey);
+    var pair = untwin(a, b, avoidKey, spawn);
     a = pair[0];
     b = pair[1];
     if (a > b) {
@@ -1102,7 +1117,7 @@
     var level = Math.min(14, 1 + state.upgrades.base + (fever ? 1 : 0));
     if (!fever && !rehearsal) state.energy -= 1;
     bumpScene('spawn');
-    if (filledCount() < 3) {
+    if (filledCount() < 3 && !pairOnBoard()) {
       dropCourier(holes, level);
       audio.playSpawn();
       renderBoard();
@@ -1124,6 +1139,14 @@
     renderHud();
     syncEnergyOffer();
     save();
+  }
+
+  function pairOnBoard() {
+    for (var i = 0; i < CELLS; i += 1) {
+      var level = state.grid[i];
+      if (level && level < 15 && partnerOf(i) >= 0) return true;
+    }
+    return false;
   }
 
   function courierPlan(level) {
@@ -1534,9 +1557,24 @@
       });
     }
     if (lead) {
+      var spawn = Math.min(14, 1 + (state.upgrades.base || 0));
+      var missing = [];
       for (i = 0; i < lead.lines.length; i += 1) {
-        if (lead.lines[i].have) continue;
-        return i18n.t('design.moveNeed', { item: itemShort(lead.lines[i].level) });
+        if (!lead.lines[i].have) missing.push(lead.lines[i].level);
+      }
+      for (i = 0; i < missing.length; i += 1) {
+        var step = missing[i] - 1;
+        if (step >= 1 && countLevel(step) >= 2) {
+          return i18n.t('design.moveMerge', { item: itemShort(step) });
+        }
+      }
+      for (i = 0; i < missing.length; i += 1) {
+        if (missing[i] <= spawn) return i18n.t('design.moveNeed', { item: itemShort(missing[i]) });
+      }
+      if (missing.length) {
+        var below = missing[0] - 1;
+        if (below >= 1) return i18n.t('design.moveNeed', { item: itemShort(below) });
+        return i18n.t('design.moveNeed', { item: itemShort(missing[0]) });
       }
     }
     for (i = 0; i < CELLS; i += 1) {
@@ -2011,7 +2049,7 @@
         missing = itemShort(view.lines[miss].level);
         break;
       }
-      verb.textContent = view.ready ? i18n.t('design.submit') : (missing ? i18n.t('design.needShort', { item: missing }) : i18n.t('design.locked'));
+      verb.textContent = view.ready ? i18n.t('design.submit') : (nextMove([view]) || (missing ? i18n.t('design.needShort', { item: missing }) : i18n.t('design.locked')));
       var prize = document.createElement('small');
       prize.className = 'order-pay';
       prize.textContent = i18n.t('design.reward', {
