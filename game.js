@@ -802,7 +802,56 @@
     juice.kick(index, 'merge');
   }
 
-  var chainDepth = 0;
+  var deal = null;
+  var seenPairs = {};
+
+  function dealActive() {
+    return !!(deal && performance.now() < deal.until && !state.event);
+  }
+
+  function offerDeal() {
+    if (state.event || dealActive()) return;
+    var levels = [];
+    for (var level = 2; level < 15; level += 1) {
+      if (spareIndexes(level).length >= 2) levels.push(level);
+    }
+    if (!levels.length) return;
+    var key = levels.join(',');
+    if (seenPairs[key]) return;
+    seenPairs[key] = true;
+    deal = { level: levels[levels.length - 1], until: performance.now() + 8000 };
+    renderEvent();
+  }
+
+  function sellDeal() {
+    if (!deal) return;
+    var extras = spareIndexes(deal.level);
+    if (extras.length < 2) {
+      deal = null;
+      renderEvent();
+      return;
+    }
+    var item = itemShort(deal.level);
+    var gain = itemIncome(deal.level) * 36;
+    state.grid[extras[0]] = 0;
+    state.grid[extras[1]] = 0;
+    state.money = Math.min(MAX_MONEY, state.money + gain);
+    if (state.quest && state.quest.type === 'earn') state.quest.progress += gain;
+    deal = null;
+    audio.playCoin();
+    toast(i18n.t('design.dealSold', { item: item, money: formatCompact(gain) }));
+    renderBoard();
+    renderHud();
+    renderEvent();
+    save();
+  }
+
+  function keepDeal() {
+    if (!deal) return;
+    deal = null;
+    toast(i18n.t('design.dealKept'));
+    renderEvent();
+  }
   var roomFlashUntil = 0;
 
   function copiesNeeded(level) {
@@ -1810,6 +1859,19 @@
 
   function renderEvent() {
     if (!nodes.eventBanner) return;
+    if (nodes.eventActions) {
+      nodes.eventActions.hidden = !dealActive();
+      nodes.dealSell.textContent = i18n.t('design.dealSell');
+      nodes.dealKeep.textContent = i18n.t('design.dealKeep');
+    }
+    if (dealActive()) {
+      nodes.eventBanner.hidden = false;
+      if (nodes.fuse) nodes.fuse.hidden = true;
+      nodes.eventTitle.textContent = i18n.t('design.dealTitle');
+      nodes.eventCopy.textContent = i18n.t('design.dealCopy', { item: itemShort(deal.level) });
+      nodes.eventTimer.textContent = '';
+      return;
+    }
     var event = state.event;
     nodes.eventBanner.hidden = !event;
     if (nodes.fuse) nodes.fuse.hidden = !(event && event.kind === 'surge');
@@ -2451,6 +2513,7 @@
       if (groups[key].length < 2) return;
       for (var n = 0; n < groups[key].length; n += 1) cells[groups[key][n]].classList.add('is-pair');
     });
+    offerDeal();
   }
 
   function winkPairs() {
@@ -2548,6 +2611,10 @@
     if (animTime - lastDraw >= 0.05) {
       lastDraw = animTime;
       if (nodes.spawn) nodes.spawn.classList.toggle('is-rehearse', rehearseActive());
+      if (deal && performance.now() >= deal.until) {
+        deal = null;
+        renderEvent();
+      }
       if ((visitShown && !visitActive()) || (stageShown && performance.now() >= stageUntil)) {
         if (!visitActive()) visitShown = false;
         if (performance.now() >= stageUntil) stageShown = false;
@@ -2709,6 +2776,9 @@
       eventTitle: $('event-title'),
       eventCopy: $('event-copy'),
       eventTimer: $('event-timer'),
+      eventActions: $('event-actions'),
+      dealSell: $('deal-sell'),
+      dealKeep: $('deal-keep'),
       fuse: $('fuse-box'),
       styleModal: $('style-modal'),
       styleTitle: $('style-title'),
@@ -2765,6 +2835,8 @@
       touched = true;
       claimQuest();
     });
+    if (nodes.dealSell) nodes.dealSell.addEventListener('click', function () { touched = true; sellDeal(); });
+    if (nodes.dealKeep) nodes.dealKeep.addEventListener('click', function () { touched = true; keepDeal(); });
     nodes.roomSection.addEventListener('click', function (event) {
       if (event.target.closest && event.target.closest('.zone-pin, .fuse-box')) return;
       touched = true;

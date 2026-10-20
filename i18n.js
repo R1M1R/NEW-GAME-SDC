@@ -133,6 +133,12 @@
         chain1: 'Серия. Комната оживает.',
         chain2: 'Гости ахнули разом.',
         chain3: 'Это уже обложка журнала.',
+        dealTitle: 'Пара горит',
+        dealCopy: '«{item}» можно соединить или продать.',
+        dealSell: 'Продать',
+        dealKeep: 'Оставить',
+        dealSold: 'Лишний «{item}» продан за {money}.',
+        dealKept: 'Оставим для серии.',
         purr: 'Мррр'
       },
       nav: {
@@ -701,6 +707,12 @@
         chain1: 'A chain. The room wakes up.',
         chain2: 'The guests gasp together.',
         chain3: 'This is a magazine cover.',
+        dealTitle: 'A pair is glowing',
+        dealCopy: 'Merge the {item}, or sell it.',
+        dealSell: 'Sell',
+        dealKeep: 'Keep',
+        dealSold: 'The spare {item} sold for {money}.',
+        dealKept: 'We will keep it for a chain.',
         purr: 'Purr'
       },
       nav: {

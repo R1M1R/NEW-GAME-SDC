@@ -1944,6 +1944,31 @@ body.is-paused .app * {
 .event-banner p { font-size: 12px; color: var(--cream-dim); line-height: 1.35; }
 .event-banner em { font-style: normal; color: var(--gold-2); font-size: 12px; font-weight: 800; }
 
+.event-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.event-actions[hidden] { display: none; }
+
+.event-actions button {
+  flex: 1 1 0;
+  min-height: 36px;
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+#deal-sell {
+  background: linear-gradient(180deg, #fff1c9, #e4b15a);
+  color: #2a1c0e;
+}
+
+#deal-keep {
+  background: #2a221b;
+  color: #f6efe4;
+  border: 1px solid rgba(228, 177, 90, 0.45);
+}
+
 .style-modal {
   position: absolute;
   inset: 0;
