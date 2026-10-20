@@ -609,7 +609,8 @@ body.is-paused .app * {
 }
 
 .cell.is-wanted {
-  box-shadow: inset 0 0 0 2px rgba(142, 174, 134, 0.95);
+  box-shadow: inset 0 0 0 3px #9dcc8e, 0 0 0 2px rgba(142, 174, 134, 0.95);
+  z-index: 2;
 }
 
 @keyframes pair-wink {

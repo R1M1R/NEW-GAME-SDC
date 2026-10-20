@@ -174,7 +174,7 @@
     var grid = source.grid || [];
     for (var i = 0; i < grid.length; i += 1) {
       var level = grid[i] || 0;
-      if (!level || level >= 15) continue;
+      if (!level) continue;
       counts[level] = (counts[level] || 0) + 1;
     }
     return counts;
@@ -466,8 +466,8 @@
           uid: Math.floor(clamp(order.uid, 1, 1e9)),
           client: order.client,
           needs: [
-            Math.floor(clamp(order.needs[0], 1, 14)),
-            Math.floor(clamp(order.needs[1], 1, 14))
+            Math.floor(clamp(order.needs[0], 1, 15)),
+            Math.floor(clamp(order.needs[1], 1, 15))
           ],
           money: clamp(order.money, 1, MAX_MONEY),
           crystals: Math.floor(clamp(order.crystals, 0, 1000)),
@@ -1543,15 +1543,10 @@
   function wantedMarks() {
     var used = {};
     var marks = {};
-    if (!state.orders) return marks;
-    state.orders.forEach(function (order) {
-      for (var n = 0; n < order.needs.length; n += 1) {
-        for (var i = 0; i < CELLS; i += 1) {
-          if (used[i] || state.grid[i] !== order.needs[n]) continue;
-          used[i] = true;
-          marks[i] = true;
-          break;
-        }
+    (state.orders || []).forEach(function (order) {
+      var cover = coverNeeds(order.needs, used, true);
+      for (var n = 0; n < cover.hits.length; n += 1) {
+        if (cover.hits[n] >= 0) marks[cover.hits[n]] = true;
       }
     });
     return marks;
