@@ -802,7 +802,79 @@
     juice.kick(index, 'merge');
   }
 
-  function mergeAt(source, target) {
+  var chainDepth = 0;
+  var roomFlashUntil = 0;
+
+  function copiesNeeded(level) {
+    var total = 0;
+    if (!state.orders) return 0;
+    for (var i = 0; i < state.orders.length; i += 1) {
+      var needs = state.orders[i].needs || [];
+      for (var n = 0; n < needs.length; n += 1) if (needs[n] === level) total += 1;
+    }
+    return total;
+  }
+
+  function spareIndexes(level) {
+    var protect = copiesNeeded(level);
+    var list = [];
+    var kept = 0;
+    for (var i = 0; i < state.grid.length; i += 1) {
+      if (state.grid[i] !== level) continue;
+      if (kept < protect) {
+        kept += 1;
+        continue;
+      }
+      list.push(i);
+    }
+    return list;
+  }
+
+  function scheduleChain(levels) {
+    if (chainDepth >= 3) return;
+    var level = 0;
+    for (var i = 0; i < levels.length; i += 1) {
+      if (levels[i] >= 15) continue;
+      if (spareIndexes(levels[i]).length >= 2) {
+        level = levels[i];
+        break;
+      }
+    }
+    if (!level) {
+      chainDepth = 0;
+      return;
+    }
+    var extras = spareIndexes(level);
+    var source = extras[0];
+    var target = extras[1];
+    chainDepth += 1;
+    var depth = chainDepth;
+    setTimeout(function () {
+      if (!state.grid || state.grid[source] !== level || state.grid[target] !== level) {
+        chainDepth = 0;
+        return;
+      }
+      if (hardPaused()) {
+        chainDepth = 0;
+        return;
+      }
+      cells[source].classList.add('is-match');
+      cells[target].classList.add('is-match');
+      if (!mergeAt(source, target, true)) {
+        chainDepth = 0;
+        return;
+      }
+      roomFlashUntil = performance.now() + 700;
+      toast(i18n.t('design.chain' + Math.min(3, depth)));
+      if (juice && cells[target]) {
+        var rect = cells[target].getBoundingClientRect();
+        juice.burst(rect.left + rect.width / 2, rect.top + rect.height / 2, 'confetti');
+        juice.floatText(rect.left + rect.width / 2, rect.top, i18n.t('monetize.combo', { n: String(depth + 1) }), 'gold');
+      }
+    }, 260);
+  }
+
+  function mergeAt(source, target, fromChain) {
     if (source === target || source < 0 || target < 0) return false;
     var from = state.grid[source];
     var onto = state.grid[target];
@@ -819,6 +891,8 @@
       noteDiscover(from + 1, target);
       noticeClient(from + 1);
       popCell(target);
+      if (!fromChain) chainDepth = 0;
+      scheduleChain([from + 1, from]);
     } else if (from === onto) {
       toast(i18n.t('play.maxItem'));
       return false;
@@ -1112,7 +1186,8 @@
       mood: (visitActive() || rehearseActive()) ? 'joy' : 'wait',
       client: client,
       pieces: stagedPieces(),
-      ghosts: ghostNeeds()
+      ghosts: ghostNeeds(),
+      flash: performance.now() < roomFlashUntil
     }, time);
   }
 

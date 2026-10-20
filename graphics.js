@@ -2102,6 +2102,10 @@
     if (model && model.pieces) stageBoard(ctx, R, model.pieces, t);
     if (model && model.ghosts) drawGhosts(ctx, R, model.ghosts, t);
     if (model && model.guest) drawGuest(ctx, R, t, model.mood, model.client);
+    if (model && model.flash) {
+      ctx.fillStyle = 'rgba(255, 214, 140, 0.16)';
+      ctx.fillRect(0, 0, w, h);
+    }
     ctx.fillStyle = radial(ctx, w / 2, h * 0.62, Math.min(w, h) * 0.55, Math.max(w, h) * 0.92, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,' + (tier >= 4 ? 0.16 : 0.1) + ')']]);
     ctx.fillRect(0, 0, w, h);
   }

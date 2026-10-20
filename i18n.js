@@ -127,9 +127,12 @@
         visitMark: 'Марк обходит комнату и кивает.',
         visitLera: 'Лера ставит букет на столик.',
         staged: 'В комнате теперь {item}.',
-        noticed: '{name} увидел «{item}».',
+        noticed: '{name}: «{item}» уже здесь.',
         rehearse: 'Репетиция! 12 секунд поставка бесплатная.',
         rehearseWait: 'Клиент переводит дух.',
+        chain1: 'Серия. Комната оживает.',
+        chain2: 'Гости ахнули разом.',
+        chain3: 'Это уже обложка журнала.',
         purr: 'Мррр'
       },
       nav: {
@@ -695,6 +698,9 @@
         noticed: '{name} spotted the {item}.',
         rehearse: 'Rehearsal! Free deliveries for 12 seconds.',
         rehearseWait: 'The client is catching their breath.',
+        chain1: 'A chain. The room wakes up.',
+        chain2: 'The guests gasp together.',
+        chain3: 'This is a magazine cover.',
         purr: 'Purr'
       },
       nav: {
