@@ -169,15 +169,17 @@
 
   function makeFoe() {
     var def = foeDef();
+    var cycle = state.cycle || 0;
+    var scale = 1 + cycle * 0.22;
     foe = {
       name: tx(def),
       line: tx(def.line),
-      max: def.hp,
-      hp: def.hp,
-      atk: def.atk,
-      gap: def.gap,
-      xp: def.xp,
-      gold: def.gold,
+      max: Math.round(def.hp * scale),
+      hp: Math.round(def.hp * scale),
+      atk: Math.round(def.atk * scale),
+      gap: Math.max(0.95, def.gap - cycle * 0.04),
+      xp: Math.round(def.xp * (1 + cycle * 0.15)),
+      gold: Math.round(def.gold * (1 + cycle * 0.12)),
       boss: !!def.boss,
       guard: !!def.boss,
       open: 0,
@@ -209,7 +211,8 @@
       zones: { light: { style: 0, level: 0 }, soft: { style: 0, level: 0 }, floor: { style: 0, level: 0 }, tech: { style: 0, level: 0 }, window: { style: 0, level: 0 } },
       seenIntro: false,
       wins: 0,
-      streak: 0
+      streak: 0,
+      cycle: 0
     };
   }
 
@@ -218,7 +221,7 @@
       var raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
       if (!raw || raw.v !== 1) return fresh();
       var next = fresh();
-      ['level', 'xp', 'hp', 'gold', 'gems', 'chapter', 'fight', 'rage', 'might', 'vital', 'luck', 'wins'].forEach(function (key) {
+      ['level', 'xp', 'hp', 'gold', 'gems', 'chapter', 'fight', 'rage', 'might', 'vital', 'luck', 'wins', 'cycle'].forEach(function (key) {
         if (typeof raw[key] === 'number' && isFinite(raw[key])) next[key] = raw[key];
       });
       next.chapter = Math.max(0, Math.min(CHAPTERS.length - 1, next.chapter | 0));
@@ -346,23 +349,27 @@
     var telegraph = !between && foe.windup >= foe.gap - 0.48 && !ended && foe.hp > 0;
     if ($('room-name')) $('room-name').textContent = tx(book);
     if ($('room-next')) {
-      $('room-next').textContent = between
-        ? between.text
-        : telegraph
-          ? (foe.guard && foe.open <= 0
-            ? (lang() === 'en' ? 'Parry — break the shield!' : 'Парируй — сломай щит!')
-            : (lang() === 'en' ? 'Wind-up — strike to parry!' : 'Замах — бей, чтобы парировать!'))
-          : foe.guard && foe.open > 0
-            ? (lang() === 'en'
-              ? 'HIT NOW · bonus damage · ' + Math.ceil(foe.open) + 's'
-              : 'БЕЙ СЕЙЧАС · бонусный урон · ' + Math.ceil(foe.open) + 'с')
-            : foe.name + '  ' + Math.max(0, Math.ceil(foe.hp)) + '/' + foe.max + (foe.guard && foe.open <= 0 ? (lang() === 'en' ? ' · shield' : ' · щит') : '');
+      $('room-next').textContent = ended
+        ? (lang() === 'en' ? 'House cleared · cycle ' + ((state.cycle || 0) + 1) : 'Дом зачищен · круг ' + ((state.cycle || 0) + 1))
+        : between
+          ? between.text
+          : telegraph
+            ? (foe.guard && foe.open <= 0
+              ? (lang() === 'en' ? 'Parry — break the shield!' : 'Парируй — сломай щит!')
+              : (lang() === 'en' ? 'Wind-up — strike to parry!' : 'Замах — бей, чтобы парировать!'))
+            : foe.open > 0 && foe.hp > 0
+              ? (lang() === 'en'
+                ? 'HIT NOW · bonus damage · ' + Math.ceil(foe.open) + 's'
+                : 'БЕЙ СЕЙЧАС · бонусный урон · ' + Math.ceil(foe.open) + 'с')
+              : foe.name + '  ' + Math.max(0, Math.ceil(foe.hp)) + '/' + foe.max + (foe.guard && foe.open <= 0 ? (lang() === 'en' ? ' · shield' : ' · щит') : '');
     }
     if ($('room-blurb')) {
       $('room-blurb').textContent = between
         ? (lang() === 'en' ? 'Tap to walk on.' : 'Нажми, чтобы идти дальше.')
         : ended
-          ? (lang() === 'en' ? 'The roof key is yours.' : 'Ключ от крыши теперь твой.')
+          ? (lang() === 'en'
+            ? 'The roof is yours. Tap Again to climb a harder house.'
+            : 'Крыша твоя. Жми «Ещё круг» — дом станет злее.')
           : (state.seenIntro ? foe.line : tx(book.intro));
     }
     if ($('orders-kicker')) $('orders-kicker').textContent = lang() === 'en' ? 'Battle' : 'Бой';
@@ -384,17 +391,19 @@
       $('income-value').textContent = (lang() === 'en' ? 'Lv ' : 'Ур. ') + state.level + '  ' + state.xp + '/' + xpNeed();
     }
     var span = document.querySelector('#btn-spawn span');
-    var vulnerable = !!(!between && foe.guard && foe.open > 0 && foe.hp > 0);
+    var vulnerable = !!(!between && foe.open > 0 && foe.hp > 0);
     if (span) {
-      span.textContent = between
-        ? (lang() === 'en' ? 'Next' : 'Дальше')
-        : telegraph
-          ? (lang() === 'en' ? 'Parry!' : 'Парируй!')
-          : vulnerable
-            ? (lang() === 'en' ? 'HIT!' : 'Бей!')
-            : state.rage >= 100
-              ? (lang() === 'en' ? 'FINISHER' : 'ПРИЁМ')
-              : (lang() === 'en' ? 'Strike' : 'Удар');
+      span.textContent = ended
+        ? (lang() === 'en' ? 'Again' : 'Ещё круг')
+        : between
+          ? (lang() === 'en' ? 'Next' : 'Дальше')
+          : telegraph
+            ? (lang() === 'en' ? 'Parry!' : 'Парируй!')
+            : vulnerable
+              ? (lang() === 'en' ? 'HIT!' : 'Бей!')
+              : state.rage >= 100
+                ? (lang() === 'en' ? 'FINISHER' : 'ПРИЁМ')
+                : (lang() === 'en' ? 'Strike' : 'Удар');
     }
     var attackBtn = $('btn-spawn');
     if (attackBtn) {
@@ -423,9 +432,11 @@
     if ($('rpg-hero-fill')) $('rpg-hero-fill').style.width = Math.max(0, state.hp / heroMax * 100) + '%';
     if ($('rpg-foe-fill')) {
       $('rpg-foe-fill').style.width = Math.max(0, foe.hp / foe.max * 100) + '%';
-      $('rpg-foe-fill').style.background = foe.guard && foe.open <= 0
-        ? 'linear-gradient(90deg, #8a6a22, #e4b15a)'
-        : 'linear-gradient(90deg, #6a2a3a, #d46a6a)';
+      $('rpg-foe-fill').style.background = foe.open > 0 && foe.hp > 0
+        ? 'linear-gradient(90deg, #4a6a3a, #9dcc8e)'
+        : foe.guard && foe.open <= 0
+          ? 'linear-gradient(90deg, #8a6a22, #e4b15a)'
+          : 'linear-gradient(90deg, #6a2a3a, #d46a6a)';
     }
     var healBtn = $('rpg-heal');
     if (healBtn) {
@@ -438,7 +449,7 @@
     if (note) {
       var last = blow && blow.text ? blow.text : '';
       var series = state.streak > 0 ? (lang() === 'en' ? 'Chain ' : 'Серия ') + state.streak : '';
-      var open = !between && foe.guard && foe.open > 0 && foe.hp > 0
+      var open = !between && foe.open > 0 && foe.hp > 0
         ? (lang() === 'en' ? 'Unload ×1.55 · ' : 'Разряжай ×1.55 · ') + Math.ceil(foe.open) + (lang() === 'en' ? 's' : 'с')
         : '';
       note.textContent = between
@@ -489,6 +500,19 @@
       ctx.beginPath();
       ctx.ellipse(0, scale * 0.35, scale * 0.72, scale * 0.78, 0, 0, Math.PI * 2);
       ctx.stroke();
+    }
+    if (foe.open > 0 && foe.hp > 0) {
+      ctx.strokeStyle = 'rgba(120, 170, 110, 0.95)';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([6, 5]);
+      ctx.beginPath();
+      ctx.ellipse(0, scale * 0.35, scale * (0.7 + Math.sin(performance.now() / 90) * 0.04), scale * 0.76, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(142, 174, 134, 0.18)';
+      ctx.beginPath();
+      ctx.ellipse(0, scale * 0.4, scale * 0.55, scale * 0.62, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath();
@@ -720,8 +744,28 @@
     ctx.strokeRect(x, y, w, h);
   }
 
+  function startNewCycle() {
+    ended = false;
+    state.chapter = 0;
+    state.fight = 0;
+    state.seenIntro = false;
+    state.cycle = (state.cycle || 0) + 1;
+    state.hp = maxHp();
+    between = null;
+    makeFoe();
+    toast(lang() === 'en'
+      ? 'New cycle ' + state.cycle + ' — the house wakes harder.'
+      : 'Новый круг ' + state.cycle + ' — дом злится сильнее.');
+    save();
+    render();
+  }
+
   function attack(fromAuto) {
-    if (!state || !foe || ended) return false;
+    if (!state || !foe) return false;
+    if (ended) {
+      if (!fromAuto) startNewCycle();
+      return true;
+    }
     if (between) {
       if (!fromAuto) finishBetween();
       return true;
@@ -755,8 +799,8 @@
     if (state.boost) power *= 2;
     var shielded = foe.guard && foe.open <= 0 && !parried;
     if (shielded) power *= 0.35;
-    if (parried && foe.guard) foe.open = 2.8;
-    var vulnerable = foe.guard && foe.open > 0 && !shielded;
+    if (parried) foe.open = foe.guard ? 2.8 : 1.55;
+    var vulnerable = foe.open > 0 && !shielded;
     if (vulnerable) power *= 1.55;
     var damage = Math.max(1, Math.round(power));
     foe.hp -= damage;
@@ -891,13 +935,17 @@
       state.fight += 1;
     }
     state.boost = false;
-    between = {
-      left: 1.15,
-      text: '+' + gold + (lang() === 'en' ? ' gold · +' : ' золота · +') + xp + (lang() === 'en' ? ' xp' : ' опыта')
-        + (chainGold ? (lang() === 'en' ? ' · chain ' : ' · серия ') + state.streak : '')
-    };
     foe.hp = 0;
     foe.open = 0;
+    if (ended) {
+      between = null;
+    } else {
+      between = {
+        left: 1.15,
+        text: '+' + gold + (lang() === 'en' ? ' gold · +' : ' золота · +') + xp + (lang() === 'en' ? ' xp' : ' опыта')
+          + (chainGold ? (lang() === 'en' ? ' · chain ' : ' · серия ') + state.streak : '')
+      };
+    }
     save();
   }
 
@@ -1051,8 +1099,8 @@
       var note = document.createElement('p');
       note.className = 'sheet-note';
       note.textContent = lang() === 'en'
-        ? 'Strike fills rage. At 100% the button becomes a finisher. Strike during a wind-up to parry and hit harder. Bandage heals a third of your health.'
-        : 'Удары копят ярость. На 100% кнопка становится приёмом. Бей во время замаха — парируешь и ударишь сильнее. Бинт лечит треть здоровья.';
+        ? 'Strike fills rage. At 100% the button becomes a finisher. Parry the wind-up to open a ×1.55 window. Bosses also raise a shield — break it, then unload. Bandage heals a third of your health.'
+        : 'Удары копят ярость. На 100% кнопка становится приёмом. Парируй замах — открывается окно ×1.55. У боссов ещё щит: сломай и разряжай. Бинт лечит треть здоровья.';
       scroll.appendChild(note);
     }
     render();
