@@ -590,7 +590,10 @@
     for (var i = 0; i < grid.length; i += 1) sum += itemIncome(grid[i]);
     var rent = source && source.upgrades ? source.upgrades.rent || 0 : 0;
     var prestige = source && source.prestige ? source.prestige : 0;
-    return Math.max(8, sum * (1 + 0.25 * rent) * (1 + prestige));
+    var memory = itemIncome(Math.max(1, discoveredMaxOf(source) - 1));
+    var live = sum * (1 + 0.25 * rent) * (1 + prestige);
+    var floor = memory * (1 + 0.25 * rent) * (1 + prestige) * 0.35;
+    return Math.max(8, live, floor);
   }
 
   function steadyIncome() {
@@ -1113,11 +1116,39 @@
     save();
   }
 
+  function courierPlan(level) {
+    var have = {};
+    var i;
+    for (i = 0; i < CELLS; i += 1) {
+      if (state.grid[i]) have[state.grid[i]] = (have[state.grid[i]] || 0) + 1;
+    }
+    var plan = [];
+    var orders = state.orders || [];
+    for (var o = 0; o < orders.length; o += 1) {
+      var needs = orders[o].needs || [];
+      var pool = {};
+      var key;
+      for (key in have) pool[key] = have[key];
+      for (var n = 0; n < needs.length; n += 1) {
+        var need = needs[n];
+        if (pool[need]) {
+          pool[need] -= 1;
+          continue;
+        }
+        if (need <= level + 1) plan.push(need);
+        else {
+          plan.push(Math.max(1, need - 1));
+          if (plan.length < 3) plan.push(Math.max(1, need - 1));
+        }
+        if (plan.length >= 3) return plan.slice(0, 3);
+      }
+    }
+    while (plan.length < 3) plan.push(level);
+    return plan.slice(0, 3);
+  }
+
   function dropCourier(holes, level) {
-    var plan = [level, level];
-    var wanted = ghostNeeds();
-    if (wanted.length && wanted[0] > 1 && wanted[0] <= level + 1) plan.push(wanted[0]);
-    else plan.push(Math.max(1, level - 1));
+    var plan = courierPlan(level);
     var amount = Math.min(plan.length, holes.length);
     for (var i = 0; i < amount; i += 1) {
       var pick = holes.splice(Math.floor(Math.random() * holes.length), 1)[0];
