@@ -478,6 +478,13 @@ body.is-paused .app * {
 
 .cell.has-item::before { content: none; }
 
+.cell.is-dream {
+  border-style: dashed;
+  border-color: rgba(228, 177, 90, 0.75);
+}
+
+.cell.is-dream::before { content: none; }
+
 .cell.has-item {
   overflow: visible;
   z-index: 1;

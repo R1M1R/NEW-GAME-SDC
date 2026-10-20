@@ -1154,7 +1154,26 @@
     return { w: w, h: h };
   }
 
+  function dreamMap() {
+    var missing = ghostNeeds();
+    var holes = emptyIndexes();
+    var map = {};
+    for (var i = 0; i < missing.length && i < holes.length; i += 1) map[holes[i]] = missing[i];
+    return map;
+  }
+
+  function markDreams() {
+    var dreams = dreamMap();
+    for (var i = 0; i < cells.length; i += 1) {
+      var dream = dreams[i];
+      cells[i].classList.toggle('is-dream', !!dream);
+      if (!dream || state.grid[i]) continue;
+      cells[i].setAttribute('aria-label', i18n.t('items.' + dream + '.name'));
+    }
+  }
+
   function drawBoard(time) {
+    var dreams = dreamMap();
     for (var i = 0; i < cells.length; i += 1) {
       var canvas = cells[i].querySelector('canvas');
       var box = fitCanvas(canvas);
@@ -1163,7 +1182,15 @@
       var ctx = canvas.getContext('2d');
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, box.w, box.h);
-      if (!level) continue;
+      if (!level) {
+        var dream = dreams[i];
+        if (!dream) continue;
+        ctx.save();
+        ctx.globalAlpha = 0.32 + Math.sin((time || 0) * 2.2 + i) * 0.06;
+        if (art.paintItem) art.paintItem(ctx, dream, box.w, time + i);
+        ctx.restore();
+        continue;
+      }
       var pose = juice ? juice.pose(i) : { x: 1, y: 1 };
       ctx.save();
       ctx.translate(box.w / 2, box.h / 2);
@@ -1359,6 +1386,7 @@
     if (nodes.roomChapter) nodes.roomChapter.textContent = scene || labelOr('rooms.' + tier + '.beat', nodes.roomBlurb.textContent);
     if (nodes.roomNext) nodes.roomNext.textContent = contractLine();
     markLivePairs();
+    markDreams();
     considerStage(tier);
   }
 
