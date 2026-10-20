@@ -992,6 +992,42 @@
     }
   }
 
+  var stageTop = -1;
+  var stageUntil = 0;
+  var stageShown = false;
+
+  function stagedPieces() {
+    var seen = {};
+    var list = [];
+    var grid = state.grid || [];
+    for (var i = 0; i < grid.length; i += 1) {
+      var level = grid[i] || 0;
+      if (level < 2 || seen[level]) continue;
+      seen[level] = true;
+      list.push(level);
+    }
+    list.sort(function (a, b) { return b - a; });
+    return list.slice(0, 3);
+  }
+
+  function noteStage(pieces) {
+    var top = pieces.length ? pieces[0] : 0;
+    if (stageTop < 0) {
+      stageTop = top;
+      return;
+    }
+    if (top === stageTop) return;
+    stageTop = top;
+    if (top < 2) return;
+    stageUntil = performance.now() + 5200;
+    stageShown = true;
+    toast(i18n.t('design.staged', { item: itemShort(top) }));
+  }
+
+  function stageLine() {
+    if (!stageShown || performance.now() >= stageUntil || stageTop < 2) return '';
+    return i18n.t('design.staged', { item: itemShort(stageTop) });
+  }
   var visitUntil = 0;
   var visitClient = '';
   var visitShown = false;
@@ -1019,7 +1055,8 @@
       maxLevel: discoveredMax(),
       rentLevel: state.upgrades.rent,
       zones: state.zones,
-      guest: visitActive()
+      guest: visitActive(),
+      pieces: stagedPieces()
     }, time);
   }
 
@@ -1062,7 +1099,9 @@
     nodes.gridCount.textContent = i18n.t('grid.count', { filled: String(filled), total: String(CELLS) });
     var tier = art.visualTier(discoveredMax(), state.upgrades.rent);
     nodes.roomName.textContent = i18n.t('rooms.' + tier + '.name');
-    var scene = visitLine();
+    var pieces = stagedPieces();
+    noteStage(pieces);
+    var scene = visitLine() || stageLine();
     nodes.roomBlurb.textContent = scene || i18n.t('rooms.' + tier + '.blurb');
     if (nodes.roomChapter) nodes.roomChapter.textContent = scene || labelOr('rooms.' + tier + '.beat', nodes.roomBlurb.textContent);
     if (nodes.roomNext) nodes.roomNext.textContent = contractLine();
@@ -2319,8 +2358,9 @@
     if (juice) juice.step(dt);
     if (animTime - lastDraw >= 0.05) {
       lastDraw = animTime;
-      if (visitShown && !visitActive()) {
-        visitShown = false;
+      if ((visitShown && !visitActive()) || (stageShown && performance.now() >= stageUntil)) {
+        if (!visitActive()) visitShown = false;
+        if (performance.now() >= stageUntil) stageShown = false;
         renderBoard();
       }
       drawRoom(animTime);

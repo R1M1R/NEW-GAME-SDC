@@ -2382,22 +2382,7 @@ body.is-paused .app * {
     line-height: 1.2;
   }
   .room-blurb { display: none; }
-  .brand-block { position: relative; }
-  .room-chapter {
-    display: block;
-    position: absolute;
-    left: 118px;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    margin: 0;
-    font-size: 11px;
-    line-height: 1.15;
-    color: rgba(246, 239, 228, 0.86);
-    text-align: right;
-    white-space: nowrap;
-    overflow: hidden;
-  }
+  .room-chapter { display: none; }
   .room-caption {
     top: 4px;
     padding: 1px 8px 2px;

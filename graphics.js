@@ -1951,6 +1951,22 @@
     ctx.restore();
   }
 
+  function stageBoard(ctx, R, pieces, time) {
+    if (!pieces || !pieces.length) return;
+    var spots = [[0.24, 0.82], [0.46, 0.88], [0.62, 0.76]];
+    for (var i = 0; i < pieces.length && i < spots.length; i += 1) {
+      var p = floorPt(R, spots[i][0], spots[i][1]);
+      var size = Math.max(18, R.bh * (i === 0 ? 0.42 : 0.32));
+      var sprite = renderSprite(pieces[i], Math.round(size), time || 0);
+      ctx.save();
+      ctx.fillStyle = i === 0 ? 'rgba(228, 177, 90, 0.35)' : 'rgba(20, 12, 8, 0.28)';
+      ellipse(ctx, p[0], p[1], size * 0.32, size * 0.08);
+      ctx.fill();
+      ctx.drawImage(sprite, p[0] - size * 0.5, p[1] - size * 0.9, size, size);
+      ctx.restore();
+    }
+  }
+
   function drawGuest(ctx, R, time) {
     var p = floorPt(R, 0.8, 0.48);
     var h = Math.max(18, R.bh * 0.62);
@@ -2056,6 +2072,7 @@
       ctx.fillRect(0, 0, w, h);
     }
     if (tier >= 6) paintSparkles(ctx, R, t);
+    if (model && model.pieces) stageBoard(ctx, R, model.pieces, t);
     if (model && model.guest) drawGuest(ctx, R, t);
     ctx.fillStyle = radial(ctx, w / 2, h * 0.62, Math.min(w, h) * 0.55, Math.max(w, h) * 0.92, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,' + (tier >= 4 ? 0.16 : 0.1) + ')']]);
     ctx.fillRect(0, 0, w, h);

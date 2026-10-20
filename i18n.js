@@ -126,6 +126,7 @@
         visitAlina: 'Алина вешает свет на картину.',
         visitMark: 'Марк обходит комнату и кивает.',
         visitLera: 'Лера ставит букет на столик.',
+        staged: 'В комнате теперь {item}.',
         purr: 'Мррр'
       },
       nav: {
@@ -687,6 +688,7 @@
         visitAlina: 'Alina hangs light on the painting.',
         visitMark: 'Mark walks the room and nods.',
         visitLera: 'Lera sets a bouquet on the table.',
+        staged: 'The room now has a {item}.',
         purr: 'Purr'
       },
       nav: {
