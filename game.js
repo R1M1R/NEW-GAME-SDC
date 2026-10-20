@@ -1711,23 +1711,12 @@
     var hits = [];
     var ready = true;
     for (var n = 0; n < needs.length; n += 1) {
-      var exact = -1;
-      var better = -1;
-      var betterLevel = 99;
+      var hit = -1;
       for (var i = 0; i < CELLS; i += 1) {
-        if (scratch[i]) continue;
-        var level = state.grid[i];
-        if (!level) continue;
-        if (level === needs[n]) {
-          exact = i;
-          break;
-        }
-        if (level > needs[n] && level < betterLevel) {
-          better = i;
-          betterLevel = level;
-        }
+        if (scratch[i] || state.grid[i] !== needs[n]) continue;
+        hit = i;
+        break;
       }
-      var hit = exact >= 0 ? exact : better;
       hits.push(hit);
       if (hit < 0) ready = false;
       else scratch[hit] = true;
@@ -1864,41 +1853,32 @@
 
   function needChip(line, twin) {
     var chip = document.createElement('div');
-    var given = line.used || line.level;
-    var swap = given !== line.level;
     var asked = i18n.t('items.' + line.level + '.name');
-    var givenName = i18n.t('items.' + given + '.name');
-    chip.className = 'order-need' + (line.have ? ' is-have' : '') + (swap ? ' is-finer' : '');
+    chip.className = 'order-need' + (line.have ? ' is-have' : '');
     var icon = document.createElement('canvas');
     icon.width = 56;
     icon.height = 56;
-    art.paintItem(icon.getContext('2d'), given, 56, animTime);
+    art.paintItem(icon.getContext('2d'), line.level, 56, animTime);
     var name = document.createElement('b');
     name.className = 'order-need-name';
-    name.textContent = (twin ? '2× ' : '') + (swap ? givenName : asked);
+    name.textContent = (twin ? '2× ' : '') + asked;
     var brief = document.createElement('b');
     brief.className = 'order-need-short';
-    brief.textContent = (twin ? '2 ' : '') + itemShort(swap ? given : line.level);
+    brief.textContent = (twin ? '2 ' : '') + itemShort(line.level);
     var mark = document.createElement('i');
     mark.className = 'order-need-mark';
-    mark.textContent = i18n.t('grid.rank', { n: String(given) });
+    mark.textContent = i18n.t('grid.rank', { n: String(line.level) });
     var level = document.createElement('i');
     level.className = 'order-need-level';
-    level.textContent = String(given);
+    level.textContent = String(line.level);
     var copy = document.createElement('span');
     copy.className = 'order-need-copy';
-    chip.title = swap ? givenName + ' ' + i18n.t('grid.instead', { name: asked }) : asked + ' · ' + mark.textContent;
+    chip.title = asked + ' · ' + mark.textContent;
     chip.appendChild(icon);
     copy.appendChild(name);
     copy.appendChild(brief);
     copy.appendChild(mark);
     copy.appendChild(level);
-    if (swap) {
-      var instead = document.createElement('em');
-      instead.className = 'order-instead';
-      instead.textContent = i18n.t('grid.instead', { name: asked });
-      copy.appendChild(instead);
-    }
     chip.appendChild(copy);
     return chip;
   }

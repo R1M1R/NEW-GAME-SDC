@@ -2202,15 +2202,21 @@
     }
     ctx.stroke();
     var poseName = pose || 'place';
-    ctx.strokeStyle = coat;
-    ctx.lineWidth = Math.max(2.2, h * 0.055);
-    if (poseName === 'pair') {
+    var shoulder = foot - h * 0.62;
+    function limb(x1, y1) {
+      ctx.strokeStyle = coat;
+      ctx.lineWidth = Math.max(2.4, h * 0.06);
       ctx.beginPath();
-      ctx.moveTo(x - h * 0.16, foot - h * 0.62);
-      ctx.lineTo(x - h * 0.06, foot - h * 0.48);
-      ctx.moveTo(x + h * 0.16, foot - h * 0.62);
-      ctx.lineTo(x + h * 0.06, foot - h * 0.48);
+      ctx.moveTo(x + (x1 < x ? -h * 0.14 : h * 0.14), shoulder);
+      ctx.quadraticCurveTo((x + x1) / 2, (shoulder + y1) / 2, x1, y1);
       ctx.stroke();
+      ctx.fillStyle = skin;
+      ellipse(ctx, x1, y1, h * 0.042, h * 0.042);
+      ctx.fill();
+    }
+    if (poseName === 'pair') {
+      limb(x - h * 0.1, foot - h * 0.5);
+      limb(x + h * 0.12, foot - h * 0.5);
       ctx.fillStyle = '#e4b15a';
       roundRect(ctx, x - h * 0.16, foot - h * 0.56, h * 0.1, h * 0.1, 2);
       ctx.fill();
@@ -2218,51 +2224,29 @@
       roundRect(ctx, x + h * 0.06, foot - h * 0.56, h * 0.1, h * 0.1, 2);
       ctx.fill();
     } else if (poseName === 'deliver') {
-      ctx.beginPath();
-      ctx.moveTo(x - h * 0.16, foot - h * 0.58);
-      ctx.lineTo(x - h * 0.02, foot - h * 0.78);
-      ctx.moveTo(x + h * 0.16, foot - h * 0.58);
-      ctx.lineTo(x + h * 0.08, foot - h * 0.78);
-      ctx.stroke();
+      limb(x - h * 0.05, foot - h * 0.72);
+      limb(x + h * 0.1, foot - h * 0.72);
       ctx.fillStyle = '#1c1814';
-      roundRect(ctx, x - h * 0.08, foot - h * 0.92, h * 0.18, h * 0.1, 2);
+      roundRect(ctx, x - h * 0.08, foot - h * 0.78, h * 0.18, h * 0.1, 2);
       ctx.fill();
       ctx.fillStyle = '#9fd4ff';
-      ellipse(ctx, x + h * 0.01, foot - h * 0.87, h * 0.035, h * 0.035);
+      ellipse(ctx, x + h * 0.01, foot - h * 0.73, h * 0.035, h * 0.035);
       ctx.fill();
     } else if (poseName === 'clap') {
-      var clap = Math.abs(Math.sin(time * 8)) * h * 0.06;
-      ctx.beginPath();
-      ctx.moveTo(x - h * 0.16, foot - h * 0.58);
-      ctx.lineTo(x - clap, foot - h * 0.72);
-      ctx.moveTo(x + h * 0.16, foot - h * 0.58);
-      ctx.lineTo(x + clap, foot - h * 0.72);
-      ctx.stroke();
-      ctx.fillStyle = skin;
-      ellipse(ctx, x - clap, foot - h * 0.72, h * 0.035, h * 0.035);
-      ctx.fill();
-      ellipse(ctx, x + clap, foot - h * 0.72, h * 0.035, h * 0.035);
-      ctx.fill();
+      var clap = h * 0.03 + Math.abs(Math.sin(time * 8)) * h * 0.04;
+      limb(x - clap, foot - h * 0.58);
+      limb(x + clap, foot - h * 0.58);
     } else {
-      ctx.beginPath();
-      ctx.moveTo(x + h * 0.16, foot - h * 0.58);
-      ctx.quadraticCurveTo(x + h * 0.24, foot - h * 0.66, x + h * 0.3, foot - h * 0.72 + wave);
-      ctx.moveTo(x - h * 0.16, foot - h * 0.58);
-      ctx.lineTo(x - h * 0.42, foot - h * 0.48);
-      ctx.stroke();
-      ctx.fillStyle = skin;
-      ellipse(ctx, x + h * 0.3, foot - h * 0.72 + wave, h * 0.035, h * 0.035);
-      ctx.fill();
-      ellipse(ctx, x - h * 0.42, foot - h * 0.48, h * 0.035, h * 0.035);
-      ctx.fill();
+      limb(x + h * 0.26, foot - h * 0.68 + wave);
+      limb(x - h * 0.24, foot - h * 0.48);
     }
-    if (poseName !== 'deliver') {
+    if (poseName !== 'deliver' && poseName !== 'pair') {
       ctx.fillStyle = '#f7f1e6';
-      roundRect(ctx, x - h * 0.38, foot - h * 0.48, h * 0.11, h * 0.14, 2);
+      roundRect(ctx, x - h * 0.32, foot - h * 0.56, h * 0.12, h * 0.15, 2);
       ctx.fill();
       ctx.strokeStyle = coat;
       ctx.lineWidth = 1;
-      ctx.strokeRect(x - h * 0.38, foot - h * 0.48, h * 0.11, h * 0.14);
+      ctx.strokeRect(x - h * 0.32, foot - h * 0.56, h * 0.12, h * 0.15);
     }
     ctx.restore();
   }
