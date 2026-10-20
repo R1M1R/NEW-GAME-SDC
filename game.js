@@ -208,7 +208,20 @@
     return true;
   }
 
-  function rollOrder(source, exclude, reserved) {
+  function needKey(needs) {
+    var x = Number(needs[0]);
+    var y = Number(needs[1]);
+    return (x < y ? x : y) + ':' + (x < y ? y : x);
+  }
+
+  function untwin(a, b, avoidKey) {
+    if (!avoidKey || needKey([a, b]) !== avoidKey) return [a, b];
+    if (b < 14) return [a, b + 1];
+    if (a > 1) return [a - 1, b];
+    return [a, b];
+  }
+
+  function rollOrder(source, exclude, reserved, avoidKey) {
     var counts = levelCounts(source);
     if (reserved && reserved.length) spendNeeds(counts, reserved);
     var bag = [];
@@ -233,6 +246,14 @@
     }
     if (a > b) {
       var swap = a;
+      a = b;
+      b = swap;
+    }
+    var pair = untwin(a, b, avoidKey);
+    a = pair[0];
+    b = pair[1];
+    if (a > b) {
+      swap = a;
       a = b;
       b = swap;
     }
@@ -289,10 +310,14 @@
         if (now - order.missSince < 4000) continue;
       }
       var exclude = [];
+      var avoid = '';
       for (var n = 0; n < state.orders.length; n += 1) {
-        if (n !== i && state.orders[n]) exclude.push(state.orders[n].client);
+        if (n !== i && state.orders[n]) {
+          exclude.push(state.orders[n].client);
+          avoid = needKey(state.orders[n].needs);
+        }
       }
-      var next = rollOrder(state, exclude, reserved);
+      var next = rollOrder(state, exclude, reserved, avoid);
       toast(i18n.t('design.left', { name: i18n.t('clients.' + order.client + '.name') }));
       state.orders[i] = next;
       holdPieces(counts, next.needs, reserved);
@@ -306,7 +331,7 @@
     var exclude = [];
     var reserved = [];
     for (var i = 0; i < 2; i += 1) {
-      var order = rollOrder(source, exclude, reserved);
+      var order = rollOrder(source, exclude, reserved, source.orders.length ? needKey(source.orders[0].needs) : '');
       exclude.push(order.client);
       reserved = reserved.concat(order.needs);
       source.orders.push(order);
@@ -448,14 +473,16 @@
       });
     }
     if (next.orders.length > 2) next.orders = next.orders.slice(0, 2);
-    if (next.orders.length < 2) {
+    if (next.orders.length === 2 && needKey(next.orders[0].needs) === needKey(next.orders[1].needs)) {
+      var twin = next.orders[0];
+      next.orders[1] = rollOrder(next, [twin.client], twin.needs.slice(), needKey(twin.needs));
+    }
       var exclude = next.orders.map(function (order) { return order.client; });
       while (next.orders.length < 2) {
-        var made = rollOrder(next, exclude);
+        var made = rollOrder(next, exclude, next.orders.length ? next.orders[0].needs : null, next.orders.length ? needKey(next.orders[0].needs) : '');
         exclude.push(made.client);
         next.orders.push(made);
       }
-    }
     if (raw.contract && (raw.contract.kind === 'discover' || raw.contract.kind === 'deliver')) {
       next.contract = {
         kind: raw.contract.kind,
@@ -1787,12 +1814,14 @@
     toast(scene || i18n.t('design.delivered', { name: i18n.t('clients.' + order.client + '.name') }));
     var exclude = [];
     var reserved = [];
+    var avoid = '';
     for (var n = 0; n < state.orders.length; n += 1) {
       if (!state.orders[n] || n === index) continue;
       exclude.push(state.orders[n].client);
       reserved = reserved.concat(state.orders[n].needs);
+      avoid = needKey(state.orders[n].needs);
     }
-    state.orders[index] = rollOrder(state, exclude, reserved);
+    state.orders[index] = rollOrder(state, exclude, reserved, avoid);
     ordersSig = '';
     renderBoard();
     renderHud();
@@ -1804,7 +1833,7 @@
     return state.orders.map(function (order) {
       var cover = coverNeeds(order.needs, used, true);
       var lines = order.needs.map(function (level, n) {
-        return { level: level, have: cover.hits[n] >= 0 };
+        return { level: level, have: cover.hits[n] >= 0, used: cover.hits[n] >= 0 ? state.grid[cover.hits[n]] : level };
       });
       return {
         order: order,
@@ -1835,11 +1864,13 @@
 
   function needChip(line, twin) {
     var chip = document.createElement('div');
-    chip.className = 'order-need' + (line.have ? ' is-have' : '');
+    var shown = line.used && line.used !== line.level ? line.used : line.level;
+    var finer = line.used > line.level;
+    chip.className = 'order-need' + (line.have ? ' is-have' : '') + (finer ? ' is-finer' : '');
     var icon = document.createElement('canvas');
     icon.width = 56;
     icon.height = 56;
-    art.paintItem(icon.getContext('2d'), line.level, 56, animTime);
+    art.paintItem(icon.getContext('2d'), shown, 56, animTime);
     var full = i18n.t('items.' + line.level + '.name');
     var name = document.createElement('b');
     name.className = 'order-need-name';
@@ -1849,10 +1880,10 @@
     brief.textContent = (twin ? '2 ' : '') + itemShort(line.level);
     var mark = document.createElement('i');
     mark.className = 'order-need-mark';
-    mark.textContent = i18n.t('grid.rank', { n: String(line.level) });
+    mark.textContent = finer ? i18n.t('grid.finer', { n: String(line.used) }) : i18n.t('grid.rank', { n: String(line.level) });
     var level = document.createElement('i');
     level.className = 'order-need-level';
-    level.textContent = String(line.level);
+    level.textContent = finer ? '↑' + line.used : String(line.level);
     var copy = document.createElement('span');
     copy.className = 'order-need-copy';
     chip.title = full + ' · ' + mark.textContent;
@@ -1876,7 +1907,7 @@
     var views = orderViews();
     var sig = [i18n.lang, Math.round((state.prestige || 0) * 100)];
     views.forEach(function (view) {
-      var flags = view.lines.map(function (line) { return line.have ? 'y' : 'n'; }).join('');
+      var flags = view.lines.map(function (line) { return (line.have ? 'y' : 'n') + (line.used || 0); }).join('');
       sig.push(view.order.uid + ':' + flags + ':' + (view.order.why || 0));
     });
     var nextSig = sig.join('|');
@@ -1915,8 +1946,8 @@
       row.className = 'order-row';
       var needs = document.createElement('div');
       needs.className = 'order-needs';
-      if (order.needs[0] === order.needs[1]) {
-        needs.appendChild(needChip({ level: order.needs[0], have: view.ready }, true));
+      if (order.needs[0] === order.needs[1] && view.lines[0].used && view.lines[0].used === view.lines[1].used) {
+        needs.appendChild(needChip({ level: order.needs[0], have: view.ready, used: view.lines[0].used }, true));
       } else {
         view.lines.forEach(function (line) { needs.appendChild(needChip(line, false)); });
       }

@@ -172,7 +172,8 @@
         title: 'Мастерская',
         count: '{filled} / {total}',
         cell: 'Ячейка {n}',
-        rank: 'Ур. {n}'
+        rank: 'Ур. {n}',
+        finer: 'Ур. {n} · выше'
       },
       album: {
         title: 'Альбом интерьера',
@@ -763,7 +764,8 @@
         title: 'Workshop',
         count: '{filled} / {total}',
         cell: 'Cell {n}',
-        rank: 'Lv {n}'
+        rank: 'Lv {n}',
+        finer: 'Lv {n} · finer'
       },
       album: {
         title: 'Interior album',
