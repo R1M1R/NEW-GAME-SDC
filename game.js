@@ -1097,6 +1097,34 @@
     toast(i18n.t('design.courier'));
   }
 
+  function stampDream(index) {
+    if (qaDrive) {
+      if (hardPaused()) return;
+    } else if (platform && platform.pause && platform.pause.active) return;
+    var dream = dreamMap()[index];
+    if (!dream || state.grid[index]) return;
+    var fever = state.feverLeftMs > 0;
+    var rehearsal = rehearseActive();
+    if (!fever && !rehearsal && state.energy < 1) {
+      deny(cells[index]);
+      toast(i18n.t('play.noEnergy'));
+      syncEnergyOffer();
+      return;
+    }
+    var level = Math.max(1, dream - 1);
+    if (!fever && !rehearsal) state.energy -= 1;
+    state.grid[index] = level;
+    bumpScene('spawn');
+    noteDiscover(level, index);
+    if (juice) juice.kick(index, 'spawn');
+    popCell(index);
+    audio.playSpawn();
+    renderBoard();
+    renderHud();
+    syncEnergyOffer();
+    save();
+  }
+
   function regen(seconds) {
     if (seconds <= 0 || state.energy >= ENERGY_MAX) return;
     state.energyAcc += seconds;
@@ -1171,7 +1199,7 @@
       var dream = dreams[i];
       cells[i].classList.toggle('is-dream', !!dream);
       if (!dream || state.grid[i]) continue;
-      cells[i].setAttribute('aria-label', i18n.t('items.' + dream + '.name'));
+      cells[i].setAttribute('aria-label', i18n.t('design.dreamTap', { item: i18n.t('items.' + dream + '.name') }));
     }
   }
 
@@ -1189,7 +1217,7 @@
         var dream = dreams[i];
         if (!dream) continue;
         ctx.save();
-        ctx.globalAlpha = 0.32 + Math.sin((time || 0) * 2.2 + i) * 0.06;
+        ctx.globalAlpha = 0.55 + Math.sin((time || 0) * 2.2 + i) * 0.08;
         if (art.paintItem) art.paintItem(ctx, dream, box.w, time + i);
         ctx.restore();
         continue;
@@ -1262,27 +1290,36 @@
   }
 
   function ghostNeeds() {
-    var order = state.orders && state.orders[0];
-    if (!order || !order.needs) return [];
+    var orders = state.orders || [];
     var have = {};
     var grid = state.grid || [];
     for (var i = 0; i < grid.length; i += 1) {
       var level = grid[i] || 0;
       if (level) have[level] = (have[level] || 0) + 1;
     }
-    var missing = [];
-    var used = {};
-    for (var n = 0; n < order.needs.length; n += 1) {
-      var need = order.needs[n];
-      if (have[need]) {
-        have[need] -= 1;
-        continue;
+    for (var o = 0; o < orders.length; o += 1) {
+      var needs = orders[o].needs || [];
+      var missing = [];
+      var used = {};
+      var pool = {};
+      var key;
+      for (key in have) pool[key] = have[key];
+      for (var n = 0; n < needs.length; n += 1) {
+        var need = needs[n];
+        if (pool[need]) {
+          pool[need] -= 1;
+          continue;
+        }
+        if (used[need]) continue;
+        used[need] = true;
+        missing.push(need);
       }
-      if (used[need]) continue;
-      used[need] = true;
-      missing.push(need);
+      if (missing.length) return missing.slice(0, 2);
+      for (n = 0; n < needs.length; n += 1) {
+        if (have[needs[n]]) have[needs[n]] -= 1;
+      }
     }
-    return missing.slice(0, 2);
+    return [];
   }
 
   function waitingClient() {
@@ -2382,7 +2419,10 @@
     var cell = event.target.closest ? event.target.closest('.cell') : null;
     if (!cell || !nodes.grid.contains(cell)) return;
     var index = Number(cell.dataset.index);
-    if (!state.grid[index]) return;
+    if (!state.grid[index]) {
+      if (dreamMap()[index]) stampDream(index);
+      return;
+    }
     touched = true;
     drag = {
       pointerId: event.pointerId,
