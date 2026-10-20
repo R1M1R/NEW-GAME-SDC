@@ -992,13 +992,34 @@
     }
   }
 
+  var visitUntil = 0;
+  var visitClient = '';
+  var visitShown = false;
+
+  function beginVisit(client) {
+    visitClient = client || '';
+    visitUntil = performance.now() + 7000;
+    visitShown = true;
+  }
+
+  function visitActive() {
+    return performance.now() < visitUntil && !!visitClient;
+  }
+
+  function visitLine() {
+    if (!visitActive()) return '';
+    var id = visitClient.charAt(0).toUpperCase() + visitClient.slice(1);
+    return labelOr('design.visit' + id, '');
+  }
+
   function drawRoom(time) {
     var box = fitCanvas(nodes.room);
     if (!box) return;
     art.paintRoom(nodes.room.getContext('2d'), box.w, box.h, {
       maxLevel: discoveredMax(),
       rentLevel: state.upgrades.rent,
-      zones: state.zones
+      zones: state.zones,
+      guest: visitActive()
     }, time);
   }
 
@@ -1041,8 +1062,9 @@
     nodes.gridCount.textContent = i18n.t('grid.count', { filled: String(filled), total: String(CELLS) });
     var tier = art.visualTier(discoveredMax(), state.upgrades.rent);
     nodes.roomName.textContent = i18n.t('rooms.' + tier + '.name');
-    nodes.roomBlurb.textContent = i18n.t('rooms.' + tier + '.blurb');
-    if (nodes.roomChapter) nodes.roomChapter.textContent = labelOr('rooms.' + tier + '.beat', nodes.roomBlurb.textContent);
+    var scene = visitLine();
+    nodes.roomBlurb.textContent = scene || i18n.t('rooms.' + tier + '.blurb');
+    if (nodes.roomChapter) nodes.roomChapter.textContent = scene || labelOr('rooms.' + tier + '.beat', nodes.roomBlurb.textContent);
     if (nodes.roomNext) nodes.roomNext.textContent = contractLine();
     considerStage(tier);
   }
@@ -1275,7 +1297,9 @@
       juice.burst(point.left + point.width / 2, point.top + 20, 'confetti');
       juice.floatText(point.left + point.width / 2, point.top, '+' + formatCompact(order.money) + ' 💰', 'gold');
     }
-    toast(i18n.t('design.delivered', { name: i18n.t('clients.' + order.client + '.name') }));
+    beginVisit(order.client);
+    var scene = visitLine();
+    toast(scene || i18n.t('design.delivered', { name: i18n.t('clients.' + order.client + '.name') }));
     var exclude = [];
     var reserved = [];
     for (var n = 0; n < state.orders.length; n += 1) {
@@ -2295,6 +2319,10 @@
     if (juice) juice.step(dt);
     if (animTime - lastDraw >= 0.05) {
       lastDraw = animTime;
+      if (visitShown && !visitActive()) {
+        visitShown = false;
+        renderBoard();
+      }
       drawRoom(animTime);
       drawBoard(animTime);
     }

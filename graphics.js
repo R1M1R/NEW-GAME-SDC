@@ -1951,6 +1951,33 @@
     ctx.restore();
   }
 
+  function drawGuest(ctx, R, time) {
+    var p = floorPt(R, 0.8, 0.48);
+    var h = Math.max(18, R.bh * 0.62);
+    var x = p[0];
+    var foot = p[1];
+    var wave = Math.sin(time * 6) * h * 0.06;
+    ctx.save();
+    ctx.fillStyle = 'rgba(20, 14, 10, 0.3)';
+    ellipse(ctx, x, foot, h * 0.2, h * 0.05);
+    ctx.fill();
+    var body = foot - h * 0.72;
+    ctx.fillStyle = '#3a2a22';
+    roundRect(ctx, x - h * 0.16, body + h * 0.22, h * 0.32, h * 0.42, h * 0.1);
+    ctx.fill();
+    ctx.fillStyle = '#f3d7b0';
+    ellipse(ctx, x, body + h * 0.12, h * 0.11, h * 0.12);
+    ctx.fill();
+    ctx.strokeStyle = '#3a2a22';
+    ctx.lineWidth = Math.max(1.5, h * 0.045);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x + h * 0.12, body + h * 0.34);
+    ctx.lineTo(x + h * 0.3, body + h * 0.16 + wave);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   function paintRoom(ctx, w, h, model, time) {
     if (w < 2 || h < 2) return;
     var maxLevel = model && model.maxLevel ? model.maxLevel : 0;
@@ -2014,6 +2041,7 @@
       ctx.fillRect(0, 0, w, h);
     }
     var power = (tier >= 4 ? 0.34 : 0.22) + sky.night * 0.8;
+    if (model && model.guest) power += 0.45;
     for (var i = 0; i < lights.length; i += 1) {
       var L = lights[i];
       glowAt(ctx, L.x, L.y, L.r, L.rgb, L.a * power * (0.92 + Math.sin(t * 2 + i) * 0.08));
@@ -2028,6 +2056,7 @@
       ctx.fillRect(0, 0, w, h);
     }
     if (tier >= 6) paintSparkles(ctx, R, t);
+    if (model && model.guest) drawGuest(ctx, R, t);
     ctx.fillStyle = radial(ctx, w / 2, h * 0.62, Math.min(w, h) * 0.55, Math.max(w, h) * 0.92, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,' + (tier >= 4 ? 0.16 : 0.1) + ')']]);
     ctx.fillRect(0, 0, w, h);
   }

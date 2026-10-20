@@ -120,6 +120,12 @@
         rareGold: 'Поле полно. Сундук стал монетами: +{amount}',
         zoneDone: 'Зона обновлена: {style}',
         delivered: '{name}: «Восторг! Проект принят»',
+        visitKirill: 'Кирилл включает камеру. Фон готов.',
+        visitSofia: 'София ставит кадр и ахает.',
+        visitViktor: 'Виктор фотографирует объявление.',
+        visitAlina: 'Алина вешает свет на картину.',
+        visitMark: 'Марк обходит комнату и кивает.',
+        visitLera: 'Лера ставит букет на столик.',
         purr: 'Мррр'
       },
       nav: {
@@ -675,6 +681,12 @@
         rareGold: 'Board is full. The chest became coins: +{amount}',
         zoneDone: 'Zone updated: {style}',
         delivered: '{name} accepted the project',
+        visitKirill: 'Kirill rolls the camera. The set is ready.',
+        visitSofia: 'Sofia frames the shot and gasps.',
+        visitViktor: 'Viktor photographs the listing.',
+        visitAlina: 'Alina hangs light on the painting.',
+        visitMark: 'Mark walks the room and nods.',
+        visitLera: 'Lera sets a bouquet on the table.',
         purr: 'Purr'
       },
       nav: {
