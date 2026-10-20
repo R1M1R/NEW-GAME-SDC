@@ -347,7 +347,12 @@
       feverLeftMs: 0,
       prestige: 0,
       event: null,
-      eventIn: 48
+      eventIn: 48,
+      scene: 0,
+      sceneSpawn: 0,
+      sceneMerges: 0,
+      sceneDelivered: 0,
+      sceneTapped: 0
     };
     seedOrders(next);
     next.contract = makeContract(next);
@@ -407,6 +412,11 @@
     next.prestige = clamp(raw.prestige, 0, 50);
     next.orderSeq = Math.floor(clamp(raw.orderSeq, 1, 1e9));
     next.eventIn = clamp(raw.eventIn == null ? 48 : raw.eventIn, 0, 60);
+    next.scene = Math.floor(clamp(raw.scene, 0, 100000));
+    next.sceneSpawn = Math.floor(clamp(raw.sceneSpawn, 0, 99));
+    next.sceneMerges = Math.floor(clamp(raw.sceneMerges, 0, 99));
+    next.sceneDelivered = Math.floor(clamp(raw.sceneDelivered, 0, 99));
+    next.sceneTapped = Math.floor(clamp(raw.sceneTapped, 0, 99));
     next.zones = blankZones();
     ZONE_IDS.forEach(function (id) {
       var zone = raw.zones && raw.zones[id];
@@ -942,6 +952,7 @@
       popCell(target);
       if (!fromChain) chainDepth = 0;
       scheduleChain([from + 1, from]);
+      bumpScene('merge');
     } else if (from === onto) {
       toast(i18n.t('play.maxItem'));
       return false;
@@ -1021,6 +1032,7 @@
     var count = Math.min(spawnCount(), holes.length);
     var level = Math.min(14, 1 + state.upgrades.base + (fever ? 1 : 0));
     if (!fever && !rehearsal) state.energy -= 1;
+    bumpScene('spawn');
     for (var i = 0; i < count; i += 1) {
       var pick = holes.splice(Math.floor(Math.random() * holes.length), 1)[0];
       state.grid[pick] = level;
@@ -1532,6 +1544,7 @@
       juice.floatText(point.left + point.width / 2, point.top, '+' + formatCompact(order.money) + ' 💰', 'gold');
     }
     beginVisit(order.client);
+    bumpScene('deliver');
     var scene = visitLine();
     toast(scene || i18n.t('design.delivered', { name: i18n.t('clients.' + order.client + '.name') }));
     var exclude = [];
@@ -1843,8 +1856,29 @@
     sheetSale = sale;
   }
 
+  function bumpScene(kind) {
+    var step = (state.scene || 0) % 4;
+    if (kind === 'spawn' && step === 0) state.sceneSpawn = (state.sceneSpawn || 0) + 1;
+    if (kind === 'merge' && step === 1) state.sceneMerges = (state.sceneMerges || 0) + 1;
+    if (kind === 'deliver' && step === 2) state.sceneDelivered = (state.sceneDelivered || 0) + 1;
+    if (kind === 'tap' && step === 3) state.sceneTapped = (state.sceneTapped || 0) + 1;
+  }
+
+  function settleScene() {
+    var step = (state.scene || 0) % 4;
+    var have = [state.sceneSpawn, state.sceneMerges, state.sceneDelivered, state.sceneTapped];
+    if (!(have[step] > 0)) return;
+    toast(i18n.t('design.sceneDone'));
+    state.scene = (state.scene || 0) + 1;
+    state.sceneSpawn = 0;
+    state.sceneMerges = 0;
+    state.sceneDelivered = 0;
+    state.sceneTapped = 0;
+  }
+
   function renderInspire() {
     if (!nodes.inspireFill) return;
+    settleScene();
     var fever = state.feverLeftMs > 0;
     nodes.inspire.classList.toggle('is-fever', fever);
     nodes.merge.classList.toggle('is-fever', fever);
@@ -1854,7 +1888,8 @@
     var seconds = String(Math.ceil(state.feverLeftMs / 1000));
     var left = i18n.t('design.feverLeft', { sec: seconds });
     if (!left || left === 'design.feverLeft') left = seconds + (i18n.lang === 'en' ? 's' : ' с');
-    nodes.inspireLabel.textContent = fever ? feverName + ' ' + left : labelOr('design.inspire', i18n.lang === 'en' ? 'Inspiration' : 'Вдохновение');
+    var slate = i18n.t('design.scene' + ((state.scene || 0) % 4));
+    nodes.inspireLabel.textContent = fever ? feverName + ' ' + left : slate;
   }
 
   function renderEvent() {
@@ -2567,6 +2602,7 @@
     rehearseUntil = now + 12000;
     rehearseNext = now + 45000;
     toast(i18n.t('design.rehearse'));
+    bumpScene('tap');
     audio.playUpgrade();
     if (nodes.spawn) nodes.spawn.classList.add('is-rehearse');
     return true;
