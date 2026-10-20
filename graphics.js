@@ -2122,7 +2122,7 @@
   }
 
   function drawGuest(ctx, R, time, mood, client, arrive, pose) {
-    var p = floorPt(R, 0.8, 0.48);
+    var p = floorPt(R, 0.72, 0.5);
     var h = Math.max(22, R.bh * 0.78);
     var shown = arrive == null ? 1 : Math.max(0, Math.min(1, arrive));
     var x = p[0] + (1 - shown) * h * 1.6;
@@ -2239,16 +2239,16 @@
       limb(x - clap, foot - h * 0.58);
       limb(x + clap, foot - h * 0.58);
     } else {
-      limb(x + h * 0.26, foot - h * 0.68 + wave);
-      limb(x - h * 0.24, foot - h * 0.48);
-    }
-    if (poseName !== 'deliver' && poseName !== 'pair') {
+      var handX = x - h * 0.2;
+      var handY = foot - h * 0.5;
+      limb(x + h * 0.22, foot - h * 0.66 + wave);
+      limb(handX, handY);
       ctx.fillStyle = '#f7f1e6';
-      roundRect(ctx, x - h * 0.32, foot - h * 0.56, h * 0.12, h * 0.15, 2);
+      roundRect(ctx, handX - h * 0.02, handY - h * 0.1, h * 0.11, h * 0.14, 2);
       ctx.fill();
       ctx.strokeStyle = coat;
       ctx.lineWidth = 1;
-      ctx.strokeRect(x - h * 0.32, foot - h * 0.56, h * 0.12, h * 0.15);
+      ctx.strokeRect(handX - h * 0.02, handY - h * 0.1, h * 0.11, h * 0.14);
     }
     ctx.restore();
   }
@@ -2404,7 +2404,7 @@
 
   function guestRect(w, h) {
     var R = makeRoom(w, h);
-    var p = floorPt(R, 0.8, 0.48);
+    var p = floorPt(R, 0.72, 0.5);
     var tall = Math.max(22, R.bh * 0.78);
     var rw = Math.max(36, tall * 0.7);
     var rh = Math.max(36, tall * 0.86);
