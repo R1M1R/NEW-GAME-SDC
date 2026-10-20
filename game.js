@@ -2326,6 +2326,24 @@
     markSnap(cellAt(event.clientX, event.clientY));
   }
 
+  function partnerOf(index) {
+    var level = state.grid[index];
+    if (!level || level >= 15) return -1;
+    var origin = cells[index].getBoundingClientRect();
+    var best = -1;
+    var bestDist = Infinity;
+    for (var i = 0; i < CELLS; i += 1) {
+      if (i === index || state.grid[i] !== level) continue;
+      var rect = cells[i].getBoundingClientRect();
+      var dist = Math.hypot(rect.left - origin.left, rect.top - origin.top);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = i;
+      }
+    }
+    return best;
+  }
+
   function pointerUp(event) {
     if (!drag || event.pointerId !== drag.pointerId) return;
     var from = drag.index;
@@ -2333,7 +2351,11 @@
     var x = event.clientX;
     var y = event.clientY;
     endDrag();
-    if (!active) return;
+    if (!active) {
+      var partner = partnerOf(from);
+      if (partner >= 0) mergeAt(from, partner);
+      return;
+    }
     var target = cellAt(x, y);
     if (target >= 0) mergeAt(from, target);
   }
