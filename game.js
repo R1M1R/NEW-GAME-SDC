@@ -200,10 +200,60 @@
     }
   }
 
+  function climbTarget(counts, spawn) {
+    var pair = 0;
+    var key;
+    for (key in counts) {
+      var level = Number(key);
+      if (level < 15 && counts[key] >= 2 && level > pair) pair = level;
+    }
+    if (pair) return Math.min(15, pair + 1);
+    return Math.min(15, (spawn || 1) + 1);
+  }
+
+  function reachCeiling(counts, spawn) {
+    var pair = 0;
+    var held = 0;
+    var key;
+    for (key in counts) {
+      var level = Number(key);
+      if (level > held) held = level;
+      if (level < 15 && counts[key] >= 2 && level > pair) pair = level;
+    }
+    return Math.max((spawn || 1) + 2, pair + 2, held + 1);
+  }
+
+  function studioAim(source) {
+    var counts = levelCounts(source);
+    var spawn = Math.min(14, 1 + ((source.upgrades && source.upgrades.base) || 0));
+    var step = climbTarget(counts, spawn);
+    var frontier = Math.max(0, source.deliveredTop || 0) + 1;
+    var goal = Math.min(15, Math.max(step, frontier));
+    return {
+      spawn: spawn,
+      step: step,
+      goal: goal,
+      horizon: Math.min(15, goal + 1)
+    };
+  }
+
+  function orderAlive(order, source) {
+    if (!order || !order.needs || order.needs.length !== 1 || !source) return false;
+    var need = Number(order.needs[0]);
+    if (need < 1 || need > 15) return false;
+    if (need <= Math.max(0, source.deliveredTop || 0)) return false;
+    var discovered = 1;
+    try { discovered = discoveredMaxOf(source); } catch (error) { discovered = 1; }
+    var spawn = Math.min(14, 1 + ((source.upgrades && source.upgrades.base) || 0));
+    var step = climbTarget(levelCounts(source), spawn);
+    return need <= Math.max(discovered, step) + 2;
+  }
+
   function orderRelevant(order, counts, spawn) {
     var left = {};
     var keys = Object.keys(counts);
     for (var i = 0; i < keys.length; i += 1) left[keys[i]] = counts[keys[i]];
+    var ceiling = reachCeiling(counts, spawn);
     var needs = order.needs.slice().sort(function (a, b) { return b - a; });
     for (var n = 0; n < needs.length; n += 1) {
       var need = needs[n];
@@ -212,7 +262,7 @@
         left[key] -= 1;
         continue;
       }
-      if (need <= spawn + 1) continue;
+      if (need <= ceiling) continue;
       var below = String(need - 1);
       if (need > 1 && left[below] >= 1) {
         left[below] -= 1;
@@ -224,71 +274,22 @@
   }
 
   function needKey(needs) {
-    var x = Number(needs[0]);
-    var y = Number(needs[1]);
+    var x = Number(needs[0]) || 1;
+    var y = Number(needs.length > 1 ? needs[1] : needs[0]) || x;
     return (x < y ? x : y) + ':' + (x < y ? y : x);
-  }
-
-  function untwin(a, b, avoidKey, spawn) {
-    if (!avoidKey || needKey([a, b]) !== avoidKey) return [a, b];
-    spawn = spawn || 1;
-    if (a === b && a === spawn + 1) return [spawn, a];
-    if (a === b && a > spawn + 1) return [spawn, a];
-    if (a !== b) return [Math.min(a, b), Math.min(a, b)];
-    if (b < 14) return [a, b + 1];
-    return [a, b];
   }
 
   function rollOrder(source, exclude, reserved, avoidKey) {
     var counts = levelCounts(source);
     if (reserved && reserved.length) spendNeeds(counts, reserved);
-    var bag = [];
-    var keys = Object.keys(counts);
-    for (var i = 0; i < keys.length; i += 1) {
-      for (var n = 0; n < counts[keys[i]]; n += 1) bag.push(Number(keys[i]));
+    var aim = studioAim(source);
+    var goal = aim.goal;
+    if (avoidKey) {
+      var parts = String(avoidKey).split(':');
+      var avoidLevel = Math.max(Number(parts[0]) || 0, Number(parts[1]) || 0);
+      if (goal === avoidLevel) goal = aim.horizon;
     }
-    var spawn = Math.min(14, 1 + ((source.upgrades && source.upgrades.base) || 0));
-    var climb = 0;
-    var climbKey;
-    for (climbKey in counts) {
-      var climbLevel = Number(climbKey);
-      if (climbLevel < 14 && counts[climbKey] >= 2 && climbLevel > climb) climb = climbLevel;
-    }
-    var a;
-    var b;
-    if (climb) {
-      if (climb <= spawn) {
-        a = Math.min(14, spawn + 1);
-        b = a;
-      } else {
-        a = spawn;
-        b = Math.min(15, climb + 1);
-      }
-    } else if (bag.length >= 2) {
-      bag.sort(function (x, y) { return y - x; });
-      var hero = Math.floor(Math.random() * Math.max(1, Math.ceil(bag.length / 3)));
-      a = bag.splice(hero, 1)[0];
-      b = bag[Math.floor(Math.random() * bag.length)];
-    } else if (bag.length === 1) {
-      a = bag[0];
-      b = spawn;
-    } else {
-      a = spawn;
-      b = spawn;
-    }
-    if (a > b) {
-      var swap = a;
-      a = b;
-      b = swap;
-    }
-    var pair = untwin(a, b, avoidKey, spawn);
-    a = pair[0];
-    b = pair[1];
-    if (a > b) {
-      swap = a;
-      a = b;
-      b = swap;
-    }
+    var a = goal;
     var pool = [];
     var skip = exclude || [];
     for (var i = 0; i < CLIENT_IDS.length; i += 1) {
@@ -300,10 +301,10 @@
       uid: source.orderSeq,
       client: pool[Math.floor(Math.random() * pool.length)],
       why: Math.floor(Math.random() * 3),
-      needs: [a, b],
-      money: orderPayout(source, [a, b]),
-      crystals: Math.max(1, Math.round((a + b) / 3)),
-      prestige: orderPrestige([a, b]),
+      needs: [a],
+      money: orderPayout(source, [a]),
+      crystals: Math.max(1, Math.round(a / 2)),
+      prestige: orderPrestige([a]),
       missSince: 0
     };
   }
@@ -328,13 +329,14 @@
     for (var i = 0; i < state.orders.length; i += 1) {
       var order = state.orders[i];
       if (!order) continue;
-      if (orderRelevant(order, counts, spawn)) {
+      if (orderAlive(order, state)) {
         holdPieces(counts, order.needs, reserved);
         if (order.missSince) order.missSince = 0;
         continue;
       }
       var missingFromBoard = !orderRelevant(order, full, spawn);
       if (missingFromBoard && !order.missSince) order.missSince = now - 5000;
+      var shaped = orderAlive(order, state);
       var exclude = [];
       var avoid = '';
       for (var n = 0; n < state.orders.length; n += 1) {
@@ -344,11 +346,18 @@
         }
       }
       var next = rollOrder(state, exclude, reserved, avoid);
-      toast(i18n.t('design.left', { name: i18n.t('clients.' + order.client + '.name') }));
+      if (shaped && coversNeeds(order.needs, full)) {
+        toast(i18n.t('design.left', { name: i18n.t('clients.' + order.client + '.name') }));
+      }
       state.orders[i] = next;
       holdPieces(counts, next.needs, reserved);
       changed = true;
     }
+    var beforeOrder = state.orders.map(function (order) { return order.uid; }).join(',');
+    state.orders.sort(function (left, right) {
+      return (left.needs[0] || 0) - (right.needs[0] || 0);
+    });
+    if (state.orders.map(function (order) { return order.uid; }).join(',') !== beforeOrder) changed = true;
     if (changed) {
       ordersSig = '';
       renderOrders();
@@ -407,7 +416,8 @@
       sceneMerges: 0,
       sceneDelivered: 0,
       sceneTapped: 0,
-      setDress: 0
+      setDress: 0,
+      deliveredTop: 0
     };
     seedOrders(next);
     next.contract = makeContract(next);
@@ -473,6 +483,7 @@
     next.sceneDelivered = Math.floor(clamp(raw.sceneDelivered, 0, 99));
     next.sceneTapped = Math.floor(clamp(raw.sceneTapped, 0, 99));
     next.setDress = Math.floor(clamp(raw.setDress, 0, 6));
+    next.deliveredTop = Math.floor(clamp(raw.deliveredTop, 0, 15));
     next.zones = blankZones();
     ZONE_IDS.forEach(function (id) {
       var zone = raw.zones && raw.zones[id];
@@ -486,14 +497,15 @@
     if (Array.isArray(raw.orders)) {
       raw.orders.forEach(function (order) {
         if (!order || CLIENT_IDS.indexOf(order.client) < 0) return;
-        if (!Array.isArray(order.needs) || order.needs.length !== 2) return;
+        if (!Array.isArray(order.needs) || !order.needs.length || order.needs.length > 2) return;
+        var keptNeeds = [];
+        for (var keep = 0; keep < order.needs.length; keep += 1) {
+          keptNeeds.push(Math.floor(clamp(order.needs[keep], 1, 15)));
+        }
         next.orders.push({
           uid: Math.floor(clamp(order.uid, 1, 1e9)),
           client: order.client,
-          needs: [
-            Math.floor(clamp(order.needs[0], 1, 15)),
-            Math.floor(clamp(order.needs[1], 1, 15))
-          ],
+          needs: keptNeeds,
           money: clamp(order.money, 1, MAX_MONEY),
           crystals: Math.floor(clamp(order.crystals, 0, 1000)),
           prestige: clamp(order.prestige, 0.01, 1),
@@ -599,7 +611,8 @@
   }
 
   function orderPrestige(needs) {
-    var pieces = itemIncome(needs[0]) + itemIncome(needs[1]);
+    var pieces = 0;
+    for (var i = 0; i < needs.length; i += 1) pieces += itemIncome(needs[i]);
     return Math.min(0.08, Math.max(0.01, pieces / 5000));
   }
 
@@ -950,11 +963,16 @@
 
   function copiesNeeded(level) {
     var total = 0;
+    var wantsNext = false;
     if (!state.orders) return 0;
     for (var i = 0; i < state.orders.length; i += 1) {
       var needs = state.orders[i].needs || [];
-      for (var n = 0; n < needs.length; n += 1) if (needs[n] === level) total += 1;
+      for (var n = 0; n < needs.length; n += 1) {
+        if (needs[n] === level) total += 1;
+        if (needs[n] === level + 1) wantsNext = true;
+      }
     }
+    if (wantsNext && countLevel(level + 1) < 1) total = Math.max(total, 2);
     return total;
   }
 
@@ -1171,13 +1189,13 @@
         if (need <= 1 || need <= level) plan.push(need);
         else {
           plan.push(need - 1);
-          if (plan.length < 3) plan.push(need - 1);
+          plan.push(need - 1);
         }
-        if (plan.length >= 3) return plan.slice(0, 3);
+        if (plan.length >= 2) return plan.slice(0, 2);
       }
     }
-    while (plan.length < 3) plan.push(level);
-    return plan.slice(0, 3);
+    while (plan.length < 2) plan.push(plan[0] || level);
+    return plan.slice(0, 2);
   }
 
   function dropCourier(holes, level) {
@@ -1547,6 +1565,17 @@
     return labelOr('design.ready' + id, '');
   }
 
+  function moveFor(need, spawn, depth) {
+    if (depth > 16 || need <= 1) return i18n.t('design.moveNeed', { item: itemShort(Math.max(1, spawn || 1)) });
+    var below = need - 1;
+    if (below >= 1 && countLevel(below) >= 2) return i18n.t('design.moveMerge', { item: itemShort(below) });
+    if (below > spawn && countLevel(below) === 1 && countLevel(below - 1) >= 2) {
+      return i18n.t('design.moveMerge', { item: itemShort(below - 1) });
+    }
+    if (below >= 1) return i18n.t('design.moveNeed', { item: itemShort(below) });
+    return i18n.t('design.moveNeed', { item: itemShort(Math.max(1, spawn || 1)) });
+  }
+
   function nextMove(views) {
     var list = views || orderViews();
     var lead = list[0];
@@ -1557,24 +1586,10 @@
       });
     }
     if (lead) {
-      var spawn = Math.min(14, 1 + (state.upgrades.base || 0));
-      var missing = [];
+      var spawnLevel = Math.min(14, 1 + (state.upgrades.base || 0));
       for (i = 0; i < lead.lines.length; i += 1) {
-        if (!lead.lines[i].have) missing.push(lead.lines[i].level);
-      }
-      for (i = 0; i < missing.length; i += 1) {
-        var step = missing[i] - 1;
-        if (step >= 1 && countLevel(step) >= 2) {
-          return i18n.t('design.moveMerge', { item: itemShort(step) });
-        }
-      }
-      for (i = 0; i < missing.length; i += 1) {
-        if (missing[i] <= spawn) return i18n.t('design.moveNeed', { item: itemShort(missing[i]) });
-      }
-      if (missing.length) {
-        var below = missing[0] - 1;
-        if (below >= 1) return i18n.t('design.moveNeed', { item: itemShort(below) });
-        return i18n.t('design.moveNeed', { item: itemShort(missing[0]) });
+        if (lead.lines[i].have) continue;
+        return moveFor(lead.lines[i].level, spawnLevel, 0);
       }
     }
     for (i = 0; i < CELLS; i += 1) {
@@ -1685,7 +1700,9 @@
       max: String(ENERGY_MAX)
     });
     var spawnWord = nodes.spawn && nodes.spawn.querySelector('span');
-    if (spawnWord) spawnWord.textContent = filledCount() < 3 ? i18n.t('design.courierBtn') : i18n.t('play.spawn');
+    if (spawnWord) {
+      spawnWord.textContent = filledCount() < 3 && !pairOnBoard() ? i18n.t('design.courierBtn') : i18n.t('play.spawn');
+    }
     var interval = energyInterval();
     var charge = state.energy >= ENERGY_MAX ? 1 : state.energyAcc / interval;
     nodes.energyFill.style.width = Math.max(0, Math.min(100, charge * 100)) + '%';
@@ -1880,6 +1897,11 @@
     if (state.contract && state.contract.kind === 'deliver') state.contract.progress += 1;
     spots.forEach(function (cellIndex) { flyOrderPiece(cellIndex, card); });
     spots.forEach(function (cellIndex) { state.grid[cellIndex] = 0; });
+    var deliveredLevel = 0;
+    for (var piece = 0; piece < order.needs.length; piece += 1) {
+      if (order.needs[piece] > deliveredLevel) deliveredLevel = order.needs[piece];
+    }
+    if (deliveredLevel > (state.deliveredTop || 0)) state.deliveredTop = deliveredLevel;
     state.money = Math.min(MAX_MONEY, state.money + order.money);
     state.crystals = Math.min(MAX_CRYSTALS, state.crystals + order.crystals);
     state.prestige = Math.min(50, state.prestige + orderPrestige(order.needs));
@@ -1911,6 +1933,9 @@
       avoid = needKey(state.orders[n].needs);
     }
     state.orders[index] = rollOrder(state, exclude, reserved, avoid);
+    state.orders.sort(function (left, right) {
+      return (left.needs[0] || 0) - (right.needs[0] || 0);
+    });
     ordersSig = '';
     renderBoard();
     renderHud();
@@ -1938,7 +1963,7 @@
     if (spoken) return spoken;
     return i18n.t('design.wish' + id, {
       a: i18n.t('items.' + order.needs[0] + '.name'),
-      b: i18n.t('items.' + order.needs[1] + '.name')
+      b: i18n.t('items.' + (order.needs[1] || order.needs[0]) + '.name')
     });
   }
 
@@ -1992,7 +2017,7 @@
       });
     }
     var views = orderViews();
-    var sig = [i18n.lang, Math.round((state.prestige || 0) * 100)];
+    var sig = [i18n.lang, Math.round((state.prestige || 0) * 100), nextMove(views)];
     views.forEach(function (view) {
       var flags = view.lines.map(function (line) { return (line.have ? 'y' : 'n') + (line.used || 0); }).join('');
       sig.push(view.order.uid + ':' + flags + ':' + (view.order.why || 0));
@@ -2001,7 +2026,7 @@
     if (nextSig === ordersSig) return;
     ordersSig = nextSig;
     nodes.ordersList.textContent = '';
-    views.forEach(function (view) {
+    views.forEach(function (view, index) {
       var order = view.order;
       var money = orderPayout(state, order.needs);
       var card = document.createElement('article');
@@ -2049,7 +2074,11 @@
         missing = itemShort(view.lines[miss].level);
         break;
       }
-      verb.textContent = view.ready ? i18n.t('design.submit') : (nextMove([view]) || (missing ? i18n.t('design.needShort', { item: missing }) : i18n.t('design.locked')));
+      verb.textContent = view.ready
+        ? i18n.t('design.submit')
+        : (index === 0
+          ? (nextMove([view]) || i18n.t('design.locked'))
+          : (missing ? i18n.t('design.needShort', { item: missing }) : i18n.t('design.locked')));
       var prize = document.createElement('small');
       prize.className = 'order-pay';
       prize.textContent = i18n.t('design.reward', {
@@ -2945,8 +2974,12 @@
       if (!groups[level]) groups[level] = [];
       groups[level].push(i);
     }
+    var lead = state.orders && state.orders[0];
+    var focus = lead && lead.needs && lead.needs[0] > 1 ? lead.needs[0] - 1 : 0;
+    var focusOn = focus && groups[focus] && groups[focus].length >= 2;
     Object.keys(groups).forEach(function (key) {
       if (groups[key].length < 2) return;
+      if (focusOn && Number(key) !== focus) return;
       for (var n = 0; n < groups[key].length; n += 1) cells[groups[key][n]].classList.add('is-pair');
     });
     offerDeal();
