@@ -342,10 +342,12 @@ body.is-paused .app * {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(115deg, transparent 28%, rgba(255, 236, 200, 0.16) 46%, transparent 62%);
-  mix-blend-mode: screen;
-  animation: sheen 8.5s ease-in-out infinite;
+  z-index: 1;
   pointer-events: none;
+  background: linear-gradient(115deg, rgba(255, 236, 200, 0) 40%, rgba(255, 236, 200, 0.28) 50%, rgba(255, 236, 200, 0) 60%);
+  background-size: 240% 100%;
+  mix-blend-mode: screen;
+  animation: sheen 6s linear infinite;
 }
 
 .room-caption {
@@ -1185,8 +1187,8 @@ body.is-paused .app * {
 }
 
 @keyframes sheen {
-  0%, 100% { transform: translateX(-8%); opacity: 0.35; }
-  50% { transform: translateX(8%); opacity: 0.85; }
+  from { background-position: 130% 0; }
+  to { background-position: -130% 0; }
 }
 
 @keyframes deny {

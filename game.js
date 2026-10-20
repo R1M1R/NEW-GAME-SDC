@@ -352,7 +352,8 @@
       sceneSpawn: 0,
       sceneMerges: 0,
       sceneDelivered: 0,
-      sceneTapped: 0
+      sceneTapped: 0,
+      setDress: 0
     };
     seedOrders(next);
     next.contract = makeContract(next);
@@ -417,6 +418,7 @@
     next.sceneMerges = Math.floor(clamp(raw.sceneMerges, 0, 99));
     next.sceneDelivered = Math.floor(clamp(raw.sceneDelivered, 0, 99));
     next.sceneTapped = Math.floor(clamp(raw.sceneTapped, 0, 99));
+    next.setDress = Math.floor(clamp(raw.setDress, 0, 6));
     next.zones = blankZones();
     ZONE_IDS.forEach(function (id) {
       var zone = raw.zones && raw.zones[id];
@@ -1335,6 +1337,8 @@
       client: client,
       arrive: guestArrive(),
       line: i18n.t('design.scene' + ((state.scene || 0) % 4)),
+      pose: ['place', 'pair', 'deliver', 'clap'][(state.scene || 0) % 4],
+      props: state.setDress || 0,
       pieces: stagedPieces(),
       ghosts: ghostNeeds(),
       flash: performance.now() < roomFlashUntil
@@ -1946,6 +1950,7 @@
 
   function settleScene() {
     var step = (state.scene || 0) % 4;
+    var finished = step;
     var have = [state.sceneSpawn, state.sceneMerges, state.sceneDelivered, state.sceneTapped];
     if (!(have[step] > 0)) return;
     var gain = Math.max(80, Math.round(steadyIncome() * 12));
@@ -1957,6 +1962,7 @@
     audio.playUpgrade();
     toast(i18n.t('design.scenePay', { money: formatCompact(gain) }));
     state.scene = (state.scene || 0) + 1;
+    if (finished === 3) state.setDress = Math.min(6, (state.setDress || 0) + 1);
     state.sceneSpawn = 0;
     state.sceneMerges = 0;
     state.sceneDelivered = 0;
