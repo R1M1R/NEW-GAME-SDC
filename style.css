@@ -350,6 +350,22 @@ body.is-paused .app * {
   animation: sheen 6s linear infinite;
 }
 
+.room.is-shutter::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: #fffdf8;
+  animation: shutter 0.48s ease-out forwards;
+}
+
+@keyframes shutter {
+  0% { opacity: 0; }
+  18% { opacity: 0.82; }
+  100% { opacity: 0; }
+}
+
 .room-caption {
   position: absolute;
   z-index: 3;

@@ -2095,6 +2095,32 @@
     }
   }
 
+  function drawShot(ctx, R, client, label) {
+    var frame = leftPt(R, 0.55, 0.62);
+    var w = Math.max(16, R.u * 8);
+    var h = w * 1.22;
+    ctx.save();
+    ctx.translate(frame[0], frame[1] - h);
+    ctx.fillStyle = 'rgba(20, 14, 10, 0.25)';
+    roundRect(ctx, 3, 4, w, h, 2);
+    ctx.fill();
+    ctx.fillStyle = '#f7f1e6';
+    roundRect(ctx, 0, 0, w, h, 2);
+    ctx.fill();
+    ctx.fillStyle = guestTint(client);
+    roundRect(ctx, 3, 3, w - 6, h * 0.68, 1);
+    ctx.fill();
+    ctx.fillStyle = '#f0c9a0';
+    ellipse(ctx, w * 0.5, h * 0.34, w * 0.12, w * 0.14);
+    ctx.fill();
+    ctx.fillStyle = '#2a2118';
+    ctx.font = '700 ' + Math.max(8, R.u * 1.4) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label || 'КАДР', w / 2, h * 0.86);
+    ctx.restore();
+  }
+
   function drawGuest(ctx, R, time, mood, client, arrive, pose) {
     var p = floorPt(R, 0.8, 0.48);
     var h = Math.max(22, R.bh * 0.78);
@@ -2127,6 +2153,9 @@
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     roundRect(ctx, x - h * 0.035, foot - h * 0.7, h * 0.07, h * 0.3, h * 0.03);
     ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.14)';
+    roundRect(ctx, x - h * 0.16, foot - h * 0.7, h * 0.08, h * 0.2, h * 0.04);
+    ctx.fill();
     ctx.fillStyle = skin;
     roundRect(ctx, x - h * 0.045, foot - h * 0.8, h * 0.09, h * 0.08, h * 0.04);
     ctx.fill();
@@ -2149,6 +2178,19 @@
     ellipse(ctx, x - h * 0.055, foot - h * 0.92, h * 0.012, h * 0.014);
     ctx.fill();
     ellipse(ctx, x + h * 0.055, foot - h * 0.92, h * 0.012, h * 0.014);
+    ctx.fill();
+    ctx.strokeStyle = hair;
+    ctx.lineWidth = Math.max(1, h * 0.018);
+    ctx.beginPath();
+    ctx.moveTo(x - h * 0.09, foot - h * 0.99);
+    ctx.quadraticCurveTo(x - h * 0.055, foot - h * 1.02, x - h * 0.025, foot - h * 0.985);
+    ctx.moveTo(x + h * 0.025, foot - h * 0.985);
+    ctx.quadraticCurveTo(x + h * 0.055, foot - h * 1.02, x + h * 0.09, foot - h * 0.99);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(212, 114, 75, 0.4)';
+    ellipse(ctx, x - h * 0.085, foot - h * 0.875, h * 0.032, h * 0.016);
+    ctx.fill();
+    ellipse(ctx, x + h * 0.085, foot - h * 0.875, h * 0.032, h * 0.016);
     ctx.fill();
     ctx.strokeStyle = '#c46b66';
     ctx.lineWidth = Math.max(1.2, h * 0.022);
@@ -2356,6 +2398,7 @@
     if (model && model.pieces) stageBoard(ctx, R, model.pieces, t);
     if (model && model.ghosts) drawGhosts(ctx, R, model.ghosts, t);
     if (model && model.props) drawSet(ctx, R, model.props, t);
+    if (model && model.shot && h >= 180) drawShot(ctx, R, model.shotClient || model.client, model.shotLabel);
     if (model && model.guest) {
       drawGuest(ctx, R, t, model.mood, model.client, model.arrive, model.pose);
       var mouth = floorPt(R, 0.62, 0.22);

@@ -1476,6 +1476,9 @@
       line: voice,
       pose: leadReady ? 'clap' : ['place', 'pair', 'deliver', 'clap'][(state.scene || 0) % 4],
       hot: leadReady && !visitActive(),
+      shot: performance.now() < shotUntil,
+      shotClient: shotClient,
+      shotLabel: i18n.t('design.shotWord'),
       props: state.setDress || 0,
       pieces: stagedPieces(),
       ghosts: ghostNeeds(),
@@ -1742,6 +1745,9 @@
     }, 520);
   }
 
+  var shotUntil = 0;
+  var shotClient = '';
+
   function deliverOrder(uid, card) {
     var index = -1;
     for (var i = 0; i < state.orders.length; i += 1) if (state.orders[i].uid === uid) index = i;
@@ -1764,6 +1770,13 @@
       juice.floatText(point.left + point.width / 2, point.top, '+' + formatCompact(order.money) + ' 💰', 'gold');
     }
     beginVisit(order.client);
+    shotUntil = performance.now() + 4200;
+    shotClient = order.client;
+    if (nodes.roomSection) {
+      nodes.roomSection.classList.remove('is-shutter');
+      void nodes.roomSection.offsetWidth;
+      nodes.roomSection.classList.add('is-shutter');
+    }
     bumpScene('deliver');
     var scene = visitLine();
     toast(scene || i18n.t('design.delivered', { name: i18n.t('clients.' + order.client + '.name') }));
