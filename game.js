@@ -1033,6 +1033,15 @@
     var level = Math.min(14, 1 + state.upgrades.base + (fever ? 1 : 0));
     if (!fever && !rehearsal) state.energy -= 1;
     bumpScene('spawn');
+    if (filledCount() < 3) {
+      dropCourier(holes, level);
+      audio.playSpawn();
+      renderBoard();
+      renderHud();
+      syncEnergyOffer();
+      save();
+      return;
+    }
     for (var i = 0; i < count; i += 1) {
       var pick = holes.splice(Math.floor(Math.random() * holes.length), 1)[0];
       state.grid[pick] = level;
@@ -1046,6 +1055,22 @@
     renderHud();
     syncEnergyOffer();
     save();
+  }
+
+  function dropCourier(holes, level) {
+    var plan = [level, level];
+    var wanted = ghostNeeds();
+    if (wanted.length && wanted[0] > 1 && wanted[0] <= level + 1) plan.push(wanted[0]);
+    else plan.push(Math.max(1, level - 1));
+    var amount = Math.min(plan.length, holes.length);
+    for (var i = 0; i < amount; i += 1) {
+      var pick = holes.splice(Math.floor(Math.random() * holes.length), 1)[0];
+      state.grid[pick] = plan[i];
+      noteDiscover(plan[i], pick);
+      if (juice) juice.kick(pick, 'spawn');
+      popCell(pick);
+    }
+    toast(i18n.t('design.courier'));
   }
 
   function regen(seconds) {
@@ -1336,6 +1361,8 @@
       current: String(Math.floor(state.energy)),
       max: String(ENERGY_MAX)
     });
+    var spawnWord = nodes.spawn && nodes.spawn.querySelector('span');
+    if (spawnWord) spawnWord.textContent = filledCount() < 3 ? i18n.t('design.courierBtn') : i18n.t('play.spawn');
     var interval = energyInterval();
     var charge = state.energy >= ENERGY_MAX ? 1 : state.energyAcc / interval;
     nodes.energyFill.style.width = Math.max(0, Math.min(100, charge * 100)) + '%';
