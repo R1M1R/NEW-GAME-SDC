@@ -634,10 +634,24 @@
     return Math.min(MAX_MONEY, Math.max(10, Math.round(pieces * 8 + boardRate(source) * 12)));
   }
 
+  function installedIncome(source) {
+    var sum = 0;
+    var seen = {};
+    var list = source && source.installed ? source.installed : [];
+    for (var i = 0; i < list.length; i += 1) {
+      var level = list[i];
+      if (!level || seen[level]) continue;
+      seen[level] = true;
+      sum += itemIncome(level);
+    }
+    return sum;
+  }
+
   function boardRate(source) {
     var sum = 0;
     var grid = source && source.grid ? source.grid : [];
     for (var i = 0; i < grid.length; i += 1) sum += itemIncome(grid[i]);
+    sum += installedIncome(source);
     var rent = source && source.upgrades ? source.upgrades.rent || 0 : 0;
     var prestige = source && source.prestige ? source.prestige : 0;
     var memory = itemIncome(Math.max(1, discoveredMaxOf(source) - 1));
@@ -651,7 +665,7 @@
   }
 
   function incomePerSec() {
-    var sum = 0;
+    var sum = installedIncome(state);
     for (var i = 0; i < CELLS; i += 1) sum += itemIncome(state.grid[i]);
     return sum * rentMultiplier();
   }
@@ -1719,7 +1733,10 @@
     var pieces = stagedPieces();
     noteStage(pieces);
     var scene = stageLine();
-    nodes.roomBlurb.textContent = scene || i18n.t('rooms.' + tier + '.blurb');
+    var installed = state.installed || [];
+    var latest = installed.length ? installed[installed.length - 1] : 0;
+    var livedIn = latest >= 2 ? i18n.t('design.staged', { item: i18n.t('items.' + latest + '.name') }) : '';
+    nodes.roomBlurb.textContent = scene || livedIn || i18n.t('rooms.' + tier + '.blurb');
     if (nodes.roomChapter) nodes.roomChapter.textContent = scene || labelOr('rooms.' + tier + '.beat', nodes.roomBlurb.textContent);
     if (nodes.roomNext) nodes.roomNext.textContent = contractLine();
     markLivePairs();
