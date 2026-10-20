@@ -1260,6 +1260,7 @@
       mood: (visitActive() || rehearseActive()) ? 'joy' : 'wait',
       client: client,
       arrive: guestArrive(),
+      line: i18n.t('design.scene' + ((state.scene || 0) % 4)),
       pieces: stagedPieces(),
       ghosts: ghostNeeds(),
       flash: performance.now() < roomFlashUntil

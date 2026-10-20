@@ -2001,30 +2001,76 @@
 
   function drawGuest(ctx, R, time, mood, client, arrive) {
     var p = floorPt(R, 0.8, 0.48);
-    var h = Math.max(18, R.bh * 0.62);
+    var h = Math.max(22, R.bh * 0.78);
     var shown = arrive == null ? 1 : Math.max(0, Math.min(1, arrive));
     var x = p[0] + (1 - shown) * h * 1.6;
     var foot = p[1];
     var joy = mood === 'joy';
     var wave = Math.sin(time * (joy ? 6 : 1.3)) * h * (joy ? 0.08 : 0.015);
     ctx.save();
-    ctx.fillStyle = 'rgba(20, 14, 10, 0.3)';
-    ellipse(ctx, x, foot, h * 0.2, h * 0.05);
+    ctx.lineCap = 'round';
+    ctx.fillStyle = 'rgba(20, 14, 10, 0.28)';
+    ellipse(ctx, x, foot, h * 0.22, h * 0.05);
     ctx.fill();
-    var body = foot - h * 0.72;
-    ctx.fillStyle = guestTint(client);
-    roundRect(ctx, x - h * 0.16, body + h * 0.22, h * 0.32, h * 0.42, h * 0.1);
-    ctx.fill();
-    ctx.fillStyle = '#f3d7b0';
-    ellipse(ctx, x, body + h * 0.12, h * 0.11, h * 0.12);
-    ctx.fill();
-    ctx.strokeStyle = '#3a2a22';
-    ctx.lineWidth = Math.max(1.5, h * 0.045);
+    var hip = foot - h * 0.34;
+    var body = foot - h * 0.78;
+    ctx.strokeStyle = guestTint(client);
+    ctx.lineWidth = Math.max(2, h * 0.07);
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(x + h * 0.12, body + h * 0.34);
-    ctx.lineTo(x + h * 0.3, body + h * 0.16 + wave);
+    ctx.moveTo(x - h * 0.06, hip);
+    ctx.lineTo(x - h * 0.1, foot);
+    ctx.moveTo(x + h * 0.06, hip);
+    ctx.lineTo(x + h * 0.1, foot);
     ctx.stroke();
+    ctx.fillStyle = guestTint(client);
+    roundRect(ctx, x - h * 0.16, body + h * 0.28, h * 0.32, h * 0.38, h * 0.1);
+    ctx.fill();
+    ctx.fillStyle = '#f3d7b0';
+    ellipse(ctx, x, body + h * 0.16, h * 0.13, h * 0.14);
+    ctx.fill();
+    ctx.fillStyle = client === 'sofia' || client === 'alina' || client === 'lera' ? '#2a2118' : '#1a140f';
+    ellipse(ctx, x, body + h * 0.08, h * 0.14, h * 0.08);
+    ctx.fill();
+    ctx.fillStyle = '#2a2118';
+    ellipse(ctx, x - h * 0.045, body + h * 0.15, h * 0.015, h * 0.018);
+    ctx.fill();
+    ellipse(ctx, x + h * 0.045, body + h * 0.15, h * 0.015, h * 0.018);
+    ctx.fill();
+    ctx.strokeStyle = '#8a4a4a';
+    ctx.lineWidth = Math.max(1, h * 0.025);
+    ctx.beginPath();
+    if (joy) {
+      ctx.arc(x, body + h * 0.18, h * 0.04, 0.15, Math.PI - 0.15);
+    } else {
+      ctx.moveTo(x - h * 0.04, body + h * 0.2);
+      ctx.lineTo(x + h * 0.04, body + h * 0.2);
+    }
+    ctx.stroke();
+    ctx.strokeStyle = guestTint(client);
+    ctx.lineWidth = Math.max(1.5, h * 0.045);
+    ctx.beginPath();
+    ctx.moveTo(x + h * 0.14, body + h * 0.4);
+    ctx.lineTo(x + h * 0.32, body + h * 0.22 + wave);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawLine(ctx, text, anchorX, anchorY, maxW) {
+    if (!text || !ctx.canvas || ctx.canvas.height < 150) return;
+    ctx.save();
+    ctx.font = '600 13px sans-serif';
+    var width = Math.min(maxW, Math.ceil(ctx.measureText(text).width) + 18);
+    var height = 26;
+    var left = Math.max(8, Math.min(anchorX - width * 0.7, ctx.canvas.width - width - 8));
+    var top = Math.max(8, anchorY - height - 6);
+    roundRect(ctx, left, top, width, height, 12);
+    ctx.fillStyle = 'rgba(22, 16, 12, 0.9)';
+    ctx.fill();
+    ctx.fillStyle = '#f6efe4';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, left + width / 2, top + height / 2 + 1, width - 14);
     ctx.restore();
   }
 
@@ -2108,7 +2154,11 @@
     if (tier >= 6) paintSparkles(ctx, R, t);
     if (model && model.pieces) stageBoard(ctx, R, model.pieces, t);
     if (model && model.ghosts) drawGhosts(ctx, R, model.ghosts, t);
-    if (model && model.guest) drawGuest(ctx, R, t, model.mood, model.client, model.arrive);
+    if (model && model.guest) {
+      drawGuest(ctx, R, t, model.mood, model.client, model.arrive);
+      var mouth = floorPt(R, 0.62, 0.22);
+      drawLine(ctx, model.line, mouth[0], mouth[1], Math.min(220, w * 0.46));
+    }
     if (model && model.client) {
       var lamp = floorPt(R, 0.8, 0.4);
       glowAt(ctx, lamp[0], lamp[1] - R.bh * 0.15, Math.max(30, R.bh), rgbOf(guestTint(model.client)), 0.4);
@@ -2124,7 +2174,7 @@
   function guestRect(w, h) {
     var R = makeRoom(w, h);
     var p = floorPt(R, 0.8, 0.48);
-    var tall = Math.max(18, R.bh * 0.62);
+    var tall = Math.max(22, R.bh * 0.78);
     var rw = Math.max(36, tall * 0.7);
     var rh = Math.max(36, tall * 0.86);
     return { x: p[0] - rw * 0.45, y: p[1] - rh, w: rw, h: rh };
