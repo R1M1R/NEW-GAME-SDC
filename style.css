@@ -668,6 +668,17 @@ body.is-paused .app * {
   box-shadow: 0 0 0 3px rgba(214, 70, 60, 0.9);
 }
 
+.spawn-btn.is-open {
+  animation: open-pulse 0.35s ease-in-out infinite;
+  box-shadow: 0 0 0 3px rgba(142, 174, 134, 0.95);
+  background: linear-gradient(180deg, #dce8c8, #9dcc8e);
+}
+
+@keyframes open-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
 @keyframes parry-pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.04); }

@@ -181,6 +181,7 @@
       boss: !!def.boss,
       guard: !!def.boss,
       open: 0,
+      phase: 0,
       windup: 0.35,
       hue: (state.chapter * 48 + state.fight * 28) % 360,
       shape: [['dust', 'pipe', 'brute'], ['ooze', 'golem', 'brute'], ['beast', 'moth', 'brute'], ['shade', 'mimic', 'brute'], ['ghost', 'drone', 'brute'], ['imp', 'keys', 'brute'], ['siren', 'hawk', 'warden']][state.chapter][state.fight]
@@ -352,7 +353,9 @@
             ? (lang() === 'en' ? 'Parry — break the shield!' : 'Парируй — сломай щит!')
             : (lang() === 'en' ? 'Wind-up — strike to parry!' : 'Замах — бей, чтобы парировать!'))
           : foe.guard && foe.open > 0
-            ? foe.name + '  ' + Math.max(0, Math.ceil(foe.hp)) + '/' + foe.max + (lang() === 'en' ? ' · shield open ' : ' · щит открыт ') + Math.ceil(foe.open)
+            ? (lang() === 'en'
+              ? 'HIT NOW · bonus damage · ' + Math.ceil(foe.open) + 's'
+              : 'БЕЙ СЕЙЧАС · бонусный урон · ' + Math.ceil(foe.open) + 'с')
             : foe.name + '  ' + Math.max(0, Math.ceil(foe.hp)) + '/' + foe.max + (foe.guard && foe.open <= 0 ? (lang() === 'en' ? ' · shield' : ' · щит') : '');
     }
     if ($('room-blurb')) {
@@ -381,15 +384,23 @@
       $('income-value').textContent = (lang() === 'en' ? 'Lv ' : 'Ур. ') + state.level + '  ' + state.xp + '/' + xpNeed();
     }
     var span = document.querySelector('#btn-spawn span');
+    var vulnerable = !!(!between && foe.guard && foe.open > 0 && foe.hp > 0);
     if (span) {
       span.textContent = between
         ? (lang() === 'en' ? 'Next' : 'Дальше')
-        : state.rage >= 100
-          ? (lang() === 'en' ? 'FINISHER' : 'ПРИЁМ')
-          : (lang() === 'en' ? 'Strike' : 'Удар');
+        : telegraph
+          ? (lang() === 'en' ? 'Parry!' : 'Парируй!')
+          : vulnerable
+            ? (lang() === 'en' ? 'HIT!' : 'Бей!')
+            : state.rage >= 100
+              ? (lang() === 'en' ? 'FINISHER' : 'ПРИЁМ')
+              : (lang() === 'en' ? 'Strike' : 'Удар');
     }
     var attackBtn = $('btn-spawn');
-    if (attackBtn) attackBtn.classList.toggle('is-parry', !!telegraph);
+    if (attackBtn) {
+      attackBtn.classList.toggle('is-parry', !between && !!telegraph);
+      attackBtn.classList.toggle('is-open', !!vulnerable && !telegraph);
+    }
     if ($('spawn-count')) $('spawn-count').textContent = Math.ceil(state.hp) + '/' + heroMax;
     if ($('inspire-label')) {
       $('inspire-label').textContent = state.rage >= 100
@@ -427,16 +438,18 @@
     if (note) {
       var last = blow && blow.text ? blow.text : '';
       var series = state.streak > 0 ? (lang() === 'en' ? 'Chain ' : 'Серия ') + state.streak : '';
-      var open = foe.guard && foe.open > 0
-        ? (lang() === 'en' ? 'Shield open ' : 'Щит открыт ') + Math.ceil(foe.open)
+      var open = !between && foe.guard && foe.open > 0 && foe.hp > 0
+        ? (lang() === 'en' ? 'Unload ×1.55 · ' : 'Разряжай ×1.55 · ') + Math.ceil(foe.open) + (lang() === 'en' ? 's' : 'с')
         : '';
-      note.textContent = telegraph
-        ? (foe.guard && foe.open <= 0
-          ? (lang() === 'en' ? 'Parry — break the shield' : 'Парируй — сломай щит')
-          : (lang() === 'en' ? 'Parry now' : 'Парируй'))
-        : (foe.guard && foe.open <= 0
-          ? (lang() === 'en' ? 'Shield — hit the wind-up' : 'Щит — бей в замах')
-          : [open, series, last].filter(Boolean).join(' · ') || (lang() === 'en' ? 'Wait for the wind-up' : 'Жди замах'));
+      note.textContent = between
+        ? (lang() === 'en' ? 'Room cleared' : 'Комната зачищена')
+        : telegraph
+          ? (foe.guard && foe.open <= 0
+            ? (lang() === 'en' ? 'Parry — break the shield' : 'Парируй — сломай щит')
+            : (lang() === 'en' ? 'Parry now' : 'Парируй'))
+          : (foe.guard && foe.open <= 0
+            ? (lang() === 'en' ? 'Shield — hit the wind-up' : 'Щит — бей в замах')
+            : [open, series, last].filter(Boolean).join(' · ') || (lang() === 'en' ? 'Wait for the wind-up' : 'Жди замах'));
     }
     var list = $('orders-list');
     if (list && list.dataset.rpg !== gearSignature()) {
@@ -742,9 +755,17 @@
     if (state.boost) power *= 2;
     var shielded = foe.guard && foe.open <= 0 && !parried;
     if (shielded) power *= 0.35;
-    if (parried && foe.guard) foe.open = 2.6;
+    if (parried && foe.guard) foe.open = 2.8;
+    var vulnerable = foe.guard && foe.open > 0 && !shielded;
+    if (vulnerable) power *= 1.55;
     var damage = Math.max(1, Math.round(power));
     foe.hp -= damage;
+    if (foe.boss && foe.phase < 1 && foe.hp <= foe.max * 0.5) {
+      foe.phase = 1;
+      foe.guard = true;
+      foe.open = 0;
+      toast(lang() === 'en' ? 'The boss raises a second shield.' : 'Босс поднимает второй щит.');
+    }
     hitFlash = 0.18;
     heroLunge = 1;
     if (!fromAuto) swing = 0.28;
@@ -753,12 +774,14 @@
       ? (lang() === 'en' ? 'Finisher ' : 'Приём ')
       : parried
         ? (lang() === 'en' ? 'Parry ' : 'Пари ')
-        : shielded
+        : vulnerable
+          ? (lang() === 'en' ? 'Open ' : 'Открыт ')
+          : shielded
           ? (lang() === 'en' ? 'Shield ' : 'Щит ')
           : crit
           ? (lang() === 'en' ? 'Crit ' : 'Крит ')
           : '';
-    blow = { text: word + damage, left: 0.85, crit: crit || finisher };
+    blow = { text: word + damage, left: 0.85, crit: crit || finisher || vulnerable };
     floatAt(blow.text, finisher || crit ? 'gold' : 'fire');
     if (juice && juice.shake) juice.shake(finisher ? 8 : 3);
     if (foe.hp <= 0) winFight();
@@ -806,6 +829,24 @@
     return pool[Math.floor(Math.random() * pool.length)];
   }
 
+  function scoreGear(item) {
+    if (!item) return -1;
+    return (item.atk || 0) * 12 + (item.hp || 0) + (item.def || 0) * 10 + Math.round((item.crit || 0) * 100);
+  }
+
+  function maybeAutoEquip() {
+    if (!state.offer) return;
+    var prev = state.gear[state.offer.slot];
+    if (scoreGear(state.offer) <= scoreGear(prev)) return;
+    state.gear[state.offer.slot] = state.offer;
+    state.offer = null;
+    if (state.hp > maxHp()) state.hp = maxHp();
+    toast(lang() === 'en' ? 'Better gear equipped.' : 'Лучшее снаряжение надето.');
+    if (prev) state.gold += 12 + (prev.atk || 0) * 6;
+    var list = $('orders-list');
+    if (list) list.dataset.rpg = '';
+  }
+
   function winFight() {
     var book = chapter();
     var def = foeDef();
@@ -831,6 +872,7 @@
         def: found.def || 0,
         crit: found.crit || 0
       };
+      maybeAutoEquip();
     }
     if (def.boss) {
       var cycle = ['light', 'soft', 'floor', 'tech', 'window'];
@@ -855,6 +897,7 @@
         + (chainGold ? (lang() === 'en' ? ' · chain ' : ' · серия ') + state.streak : '')
     };
     foe.hp = 0;
+    foe.open = 0;
     save();
   }
 
