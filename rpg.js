@@ -178,7 +178,8 @@
       gold: def.gold,
       boss: !!def.boss,
       windup: 0.35,
-      hue: (state.chapter * 48 + state.fight * 28) % 360
+      hue: (state.chapter * 48 + state.fight * 28) % 360,
+      shape: [['dust', 'pipe', 'brute'], ['ooze', 'golem', 'brute'], ['beast', 'moth', 'brute'], ['shade', 'mimic', 'brute'], ['ghost', 'drone', 'brute'], ['imp', 'keys', 'brute'], ['siren', 'hawk', 'warden']][state.chapter][state.fight]
     };
     ended = false;
   }
@@ -358,7 +359,9 @@
     if ($('quest-fill')) $('quest-fill').style.width = (ratio * 100) + '%';
     if ($('money-value')) $('money-value').textContent = String(state.gold);
     if ($('crystal-value')) $('crystal-value').textContent = String(state.gems);
-    if ($('income-value')) $('income-value').textContent = (lang() === 'en' ? 'Lv ' : 'Ур. ') + state.level;
+    if ($('income-value')) {
+      $('income-value').textContent = (lang() === 'en' ? 'Lv ' : 'Ур. ') + state.level + '  ' + state.xp + '/' + xpNeed();
+    }
     var span = document.querySelector('#btn-spawn span');
     if (span) {
       span.textContent = state.rage >= 100
@@ -424,6 +427,124 @@
       var item = state.gear[slot];
       return item ? item.ru : '-';
     }).join('|');
+  }
+
+  function drawFoe(ctx, x, y, scale) {
+    var wind = foe.gap ? foe.windup / foe.gap : 0;
+    var shape = foe.shape || 'brute';
+    ctx.save();
+    ctx.translate(x, y - (wind > 0.72 ? scale * 0.08 : 0));
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(0, scale * 0.95, scale * 0.5, scale * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    if (wind > 0.72) {
+      ctx.strokeStyle = 'rgba(214, 70, 60, 0.95)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(0, scale * 0.2, scale * (0.85 + wind * 0.25), Math.PI * 1.1, Math.PI * 1.9);
+      ctx.stroke();
+    }
+    var ink = 'hsl(' + foe.hue + ', 46%, 32%)';
+    ctx.fillStyle = ink;
+    ctx.strokeStyle = '#1a120e';
+    ctx.lineWidth = 2;
+    if (shape === 'ooze' || shape === 'siren') {
+      ctx.beginPath();
+      ctx.ellipse(0, scale * 0.45, scale * 0.55, scale * 0.38, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(-scale * 0.15, scale * 0.3, scale * 0.12, scale * 0.08, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (shape === 'pipe' || shape === 'golem') {
+      ctx.fillRect(-scale * 0.45, scale * 0.05, scale * 0.9, scale * 0.7);
+      ctx.fillStyle = '#d7c3ae';
+      ctx.fillRect(-scale * 0.15, -scale * 0.15, scale * 0.3, scale * 0.35);
+    } else if (shape === 'beast' || shape === 'hawk') {
+      ctx.beginPath();
+      ctx.ellipse(0, scale * 0.45, scale * 0.62, scale * 0.28, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(scale * 0.42, scale * 0.1, scale * 0.22, scale * 0.16, 0, 0, Math.PI * 2);
+      ctx.fill();
+      if (shape === 'hawk') {
+        ctx.beginPath();
+        ctx.moveTo(-scale * 0.2, scale * 0.3);
+        ctx.lineTo(-scale * 0.9, scale * 0.05);
+        ctx.lineTo(-scale * 0.2, scale * 0.55);
+        ctx.fill();
+      }
+    } else if (shape === 'moth' || shape === 'ghost') {
+      ctx.globalAlpha = shape === 'ghost' ? 0.75 : 1;
+      ctx.beginPath();
+      ctx.ellipse(-scale * 0.28, scale * 0.35, scale * 0.28, scale * 0.42, -0.4, 0, Math.PI * 2);
+      ctx.ellipse(scale * 0.28, scale * 0.35, scale * 0.28, scale * 0.42, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(0, scale * 0.4, scale * 0.16, scale * 0.28, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (shape === 'mimic' || shape === 'keys') {
+      ctx.fillRect(-scale * 0.4, scale * 0.15, scale * 0.8, scale * 0.55);
+      ctx.fillStyle = '#f4efe4';
+      ctx.fillRect(-scale * 0.28, scale * 0.28, scale * 0.56, scale * 0.12);
+    } else if (shape === 'drone') {
+      ctx.beginPath();
+      ctx.moveTo(0, -scale * 0.05);
+      ctx.lineTo(scale * 0.35, scale * 0.4);
+      ctx.lineTo(0, scale * 0.7);
+      ctx.lineTo(-scale * 0.35, scale * 0.4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#e4b15a';
+      ctx.beginPath();
+      ctx.moveTo(-scale * 0.55, scale * 0.15);
+      ctx.lineTo(scale * 0.55, scale * 0.15);
+      ctx.stroke();
+    } else if (shape === 'imp') {
+      ctx.beginPath();
+      ctx.arc(0, scale * 0.4, scale * 0.32, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#e07a3a';
+      ctx.beginPath();
+      ctx.moveTo(-scale * 0.1, scale * 0.15);
+      ctx.lineTo(0, -scale * 0.25);
+      ctx.lineTo(scale * 0.1, scale * 0.15);
+      ctx.fill();
+    } else if (shape === 'dust') {
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath();
+      ctx.ellipse(0, scale * 0.4, scale * 0.34, scale * 0.48, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(232, 220, 196, 0.45)';
+      ctx.beginPath();
+      ctx.arc(-scale * 0.28, scale * 0.2, scale * 0.16, 0, Math.PI * 2);
+      ctx.arc(scale * 0.3, scale * 0.55, scale * 0.18, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(-scale * 0.46, scale * 0.05);
+      ctx.lineTo(-scale * 0.66, scale * 0.4);
+      ctx.quadraticCurveTo(-scale * 0.2, scale * 1.05, 0, scale * 0.92);
+      ctx.quadraticCurveTo(scale * 0.2, scale * 1.05, scale * 0.66, scale * 0.4);
+      ctx.lineTo(scale * 0.46, scale * 0.05);
+      ctx.closePath();
+      ctx.fill();
+      if (foe.boss || shape === 'warden' || shape === 'brute') {
+        ctx.strokeStyle = '#e4b15a';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, -scale * 0.28, scale * 0.24, Math.PI, 0);
+        ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#1a120e';
+    ctx.beginPath();
+    ctx.arc(-scale * 0.1, scale * 0.32, scale * 0.05, 0, Math.PI * 2);
+    ctx.arc(scale * 0.12, scale * 0.32, scale * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   function drawActor(ctx, x, y, scale, kind, flash) {
@@ -494,12 +615,21 @@
       flash: hitFlash > 0
     }, time);
     if (h < 90) return;
-    var heroX = w * 0.30 + heroLunge * 18;
-    var foeX = w * 0.70 - foeLunge * 16;
+    var wind = foe.gap ? foe.windup / foe.gap : 0;
+    var heroX = w * 0.30 + heroLunge * 22;
+    var foeX = w * 0.72 - foeLunge * 18 - (wind > 0.72 ? w * 0.03 : 0);
     var foot = h * 0.78;
     var scale = Math.max(28, h * 0.22);
     drawActor(ctx, heroX, foot - scale, scale, 'hero', 0);
-    drawActor(ctx, foeX, foot - scale, scale * (foe.boss ? 1.12 : 1), 'foe', hitFlash);
+    drawFoe(ctx, foeX, foot - scale * 0.2, scale * (foe.boss ? 1.15 : 1));
+    if (heroLunge > 0.2) {
+      ctx.strokeStyle = 'rgba(244, 214, 150, 0.9)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(heroX + scale * 0.4, foot - scale * 0.7);
+      ctx.lineTo(foeX - scale * 0.2, foot - scale * 0.55);
+      ctx.stroke();
+    }
   }
 
   function attack(fromAuto) {
