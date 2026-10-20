@@ -663,7 +663,15 @@ body.is-paused .app * {
   color: rgba(246, 239, 228, 0.55);
 }
 
-.spawn-btn.is-deny { animation: deny 0.28s ease; }
+.spawn-btn.is-parry {
+  animation: parry-pulse 0.4s ease-in-out infinite;
+  box-shadow: 0 0 0 3px rgba(214, 70, 60, 0.9);
+}
+
+@keyframes parry-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
 
 .app.is-rpg .merge-grid,
 .app.is-rpg #board-links,

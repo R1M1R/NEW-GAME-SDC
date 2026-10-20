@@ -112,6 +112,7 @@
   var foeLunge = 0;
   var saveAcc = 0;
   var ended = false;
+  var between = null;
 
   function $(id) { return document.getElementById(id); }
 
@@ -334,15 +335,21 @@
     if (!state || !foe) return;
     var book = chapter();
     var heroMax = maxHp();
-    var telegraph = foe.windup >= foe.gap - 0.48 && !ended;
+    var telegraph = !between && foe.windup >= foe.gap - 0.48 && !ended && foe.hp > 0;
     if ($('room-name')) $('room-name').textContent = tx(book);
     if ($('room-next')) {
-      $('room-next').textContent = telegraph
-        ? (lang() === 'en' ? 'Wind-up — strike to parry!' : 'Замах — бей, чтобы парировать!')
-        : foe.name + '  ' + Math.max(0, Math.ceil(foe.hp)) + '/' + foe.max;
+      $('room-next').textContent = between
+        ? between.text
+        : telegraph
+          ? (lang() === 'en' ? 'Wind-up — strike to parry!' : 'Замах — бей, чтобы парировать!')
+          : foe.name + '  ' + Math.max(0, Math.ceil(foe.hp)) + '/' + foe.max;
     }
     if ($('room-blurb')) {
-      $('room-blurb').textContent = ended ? (lang() === 'en' ? 'The roof key is yours.' : 'Ключ от крыши теперь твой.') : (state.seenIntro ? foe.line : tx(book.intro));
+      $('room-blurb').textContent = between
+        ? (lang() === 'en' ? 'Tap to walk on.' : 'Нажми, чтобы идти дальше.')
+        : ended
+          ? (lang() === 'en' ? 'The roof key is yours.' : 'Ключ от крыши теперь твой.')
+          : (state.seenIntro ? foe.line : tx(book.intro));
     }
     if ($('orders-kicker')) $('orders-kicker').textContent = lang() === 'en' ? 'Battle' : 'Бой';
     if ($('orders-prestige')) {
@@ -364,10 +371,14 @@
     }
     var span = document.querySelector('#btn-spawn span');
     if (span) {
-      span.textContent = state.rage >= 100
-        ? (lang() === 'en' ? 'FINISHER' : 'ПРИЁМ')
-        : (lang() === 'en' ? 'Strike' : 'Удар');
+      span.textContent = between
+        ? (lang() === 'en' ? 'Next' : 'Дальше')
+        : state.rage >= 100
+          ? (lang() === 'en' ? 'FINISHER' : 'ПРИЁМ')
+          : (lang() === 'en' ? 'Strike' : 'Удар');
     }
+    var attackBtn = $('btn-spawn');
+    if (attackBtn) attackBtn.classList.toggle('is-parry', !!telegraph);
     if ($('spawn-count')) $('spawn-count').textContent = Math.ceil(state.hp) + '/' + heroMax;
     if ($('inspire-label')) {
       $('inspire-label').textContent = state.rage >= 100
@@ -621,7 +632,14 @@
     var foot = h * 0.78;
     var scale = Math.max(28, h * 0.22);
     drawActor(ctx, heroX, foot - scale, scale, 'hero', 0);
-    drawFoe(ctx, foeX, foot - scale * 0.2, scale * (foe.boss ? 1.15 : 1));
+    if (foe.hp <= 0) {
+      ctx.fillStyle = 'rgba(90, 40, 40, 0.75)';
+      ctx.beginPath();
+      ctx.ellipse(foeX, foot, scale * 0.7, scale * 0.14, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      drawFoe(ctx, foeX, foot - scale * 0.2, scale * (foe.boss ? 1.15 : 1));
+    }
     if (heroLunge > 0.2) {
       ctx.strokeStyle = 'rgba(244, 214, 150, 0.9)';
       ctx.lineWidth = 3;
@@ -634,6 +652,10 @@
 
   function attack(fromAuto) {
     if (!state || !foe || ended) return false;
+    if (between) {
+      if (!fromAuto) finishBetween();
+      return true;
+    }
     if (document.body.classList.contains('is-paused') && !fromAuto) {
       /* taps during a real ad are ignored; the preview is often paused, QA passes fromAuto false too */
     }
@@ -750,8 +772,19 @@
       state.fight += 1;
     }
     state.boost = false;
-    if (!ended) makeFoe();
+    between = {
+      left: 1.15,
+      text: '+' + gold + (lang() === 'en' ? ' gold · +' : ' золота · +') + xp + (lang() === 'en' ? ' xp' : ' опыта')
+    };
+    foe.hp = 0;
     save();
+  }
+
+  function finishBetween() {
+    if (!between) return;
+    between = null;
+    if (!ended) makeFoe();
+    render();
   }
 
   function equipOffer() {
@@ -790,6 +823,11 @@
 
   function step(dt) {
     if (ended || !foe) return;
+    if (between) {
+      between.left -= dt;
+      if (between.left <= 0) finishBetween();
+      return;
+    }
     swing = Math.max(0, swing - dt);
     healCd = Math.max(0, healCd - dt);
     hitFlash = Math.max(0, hitFlash - dt);
