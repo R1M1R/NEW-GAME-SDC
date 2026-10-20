@@ -1446,15 +1446,21 @@
     var box = fitCanvas(nodes.room);
     if (!box) return;
     var client = visitActive() ? visitClient : waitingClient();
+    var views = orderViews();
+    var lead = views[0];
+    var happy = visitActive() || rehearseActive() || performance.now() < sceneJoyUntil || !!(lead && lead.ready);
+    var voice = visitLine();
+    if (!voice && lead) voice = clientWhy(lead.order);
+    if (!voice) voice = i18n.t('design.scene' + ((state.scene || 0) % 4));
     art.paintRoom(nodes.room.getContext('2d'), box.w, box.h, {
       maxLevel: discoveredMax(),
       rentLevel: state.upgrades.rent,
       zones: state.zones,
       guest: !!client,
-      mood: (visitActive() || rehearseActive() || performance.now() < sceneJoyUntil) ? 'joy' : 'wait',
+      mood: happy ? 'joy' : 'wait',
       client: client,
       arrive: guestArrive(),
-      line: i18n.t('design.scene' + ((state.scene || 0) % 4)),
+      line: voice,
       pose: ['place', 'pair', 'deliver', 'clap'][(state.scene || 0) % 4],
       props: state.setDress || 0,
       pieces: stagedPieces(),

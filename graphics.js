@@ -2229,17 +2229,48 @@
     if (!text || !ctx.canvas || ctx.canvas.height < 150) return;
     ctx.save();
     ctx.font = '600 13px sans-serif';
-    var width = Math.min(maxW, Math.ceil(ctx.measureText(text).width) + 18);
-    var height = 26;
-    var left = Math.max(8, Math.min(anchorX - width * 0.7, ctx.canvas.width - width - 8));
-    var top = Math.max(8, anchorY - height - 6);
-    roundRect(ctx, left, top, width, height, 12);
-    ctx.fillStyle = 'rgba(22, 16, 12, 0.9)';
+    var limit = Math.max(120, Math.min(maxW, ctx.canvas.width * 0.62));
+    var words = String(text).split(' ');
+    var lines = [];
+    var current = '';
+    var i;
+    for (i = 0; i < words.length; i += 1) {
+      var trial = current ? current + ' ' + words[i] : words[i];
+      if (ctx.measureText(trial).width > limit - 20 && current) {
+        lines.push(current);
+        current = words[i];
+      } else current = trial;
+    }
+    if (current) lines.push(current);
+    var dot = String(text).indexOf('. ');
+    if (dot > 8 && dot < String(text).length - 3) {
+      var head = String(text).slice(0, dot + 1);
+      var tail = String(text).slice(dot + 2);
+      if (ctx.measureText(head).width <= limit - 20 && ctx.measureText(tail).width <= limit - 20) {
+        lines = [head, tail];
+      }
+    }
+    if (lines.length > 2) lines = [lines[0], lines.slice(1).join(' ')];
+    var width = 0;
+    for (i = 0; i < lines.length; i += 1) width = Math.max(width, ctx.measureText(lines[i]).width);
+    width = Math.min(limit, Math.ceil(width) + 20);
+    var height = lines.length > 1 ? 46 : 30;
+    var left = Math.max(8, anchorX - width - 16);
+    if (left + width > ctx.canvas.width - 8) left = Math.max(8, ctx.canvas.width - width - 8);
+    var top = Math.max(8, anchorY - height - 10);
+    roundRect(ctx, left, top, width, height, 14);
+    ctx.fillStyle = 'rgba(255, 248, 236, 0.95)';
     ctx.fill();
-    ctx.fillStyle = '#f6efe4';
+    ctx.strokeStyle = 'rgba(90, 62, 36, 0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#2a2118';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, left + width / 2, top + height / 2 + 1, width - 14);
+    for (i = 0; i < lines.length; i += 1) {
+      var y = top + (lines.length > 1 ? 15 + i * 18 : height / 2 + 1);
+      ctx.fillText(lines[i], left + width / 2, y, width - 16);
+    }
     ctx.restore();
   }
 
@@ -2328,7 +2359,7 @@
     if (model && model.guest) {
       drawGuest(ctx, R, t, model.mood, model.client, model.arrive, model.pose);
       var mouth = floorPt(R, 0.62, 0.22);
-      drawLine(ctx, model.line, mouth[0], mouth[1], Math.min(220, w * 0.46));
+      drawLine(ctx, model.line, mouth[0], mouth[1], Math.min(280, w * 0.58));
     }
     if (model && model.client) {
       var lamp = floorPt(R, 0.8, 0.4);
