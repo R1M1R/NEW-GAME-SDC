@@ -1214,6 +1214,7 @@
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, box.w, box.h);
       if (!level) {
+        cells[i].style.removeProperty('--rim');
         var dream = dreams[i];
         if (!dream) continue;
         ctx.save();
@@ -1222,6 +1223,7 @@
         ctx.restore();
         continue;
       }
+      cells[i].style.setProperty('--rim', rimColor(level));
       var pose = juice ? juice.pose(i) : { x: 1, y: 1 };
       ctx.save();
       ctx.translate(box.w / 2, box.h / 2);
@@ -1231,6 +1233,85 @@
       else art.paintItem(ctx, level, box.w, time + i * 0.17);
       ctx.restore();
     }
+    drawLinks();
+  }
+
+  function rimColor(level) {
+    if (level >= 13) return '#e4b15a';
+    if (level >= 10) return '#b388ff';
+    if (level >= 7) return '#4c9bff';
+    if (level >= 4) return '#3dcaa0';
+    return '#c4b8a4';
+  }
+
+  function drawLinks() {
+    var canvas = nodes.links;
+    if (!canvas || !nodes.board || !cells.length) return;
+    var board = nodes.board.getBoundingClientRect();
+    if (board.width < 2 || board.height < 2) return;
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var w = Math.max(1, Math.round(board.width * dpr));
+    var h = Math.max(1, Math.round(board.height * dpr));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, board.width, board.height);
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([7, 9]);
+    ctx.lineDashOffset = -animTime * 36;
+    function center(index) {
+      var rect = cells[index].getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2 - board.left,
+        y: rect.top + rect.height / 2 - board.top,
+        pad: rect.width * 0.42
+      };
+    }
+    function edge(from, to) {
+      var dx = to.x - from.x;
+      var dy = to.y - from.y;
+      var len = Math.hypot(dx, dy) || 1;
+      return { x: from.x + dx / len * from.pad, y: from.y + dy / len * from.pad };
+    }
+    function thread(a, b, rgb) {
+      var start = edge(a, b);
+      var end = edge(b, a);
+      var lift = Math.min(26, Math.hypot(end.x - start.x, end.y - start.y) * 0.22);
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.quadraticCurveTo((start.x + end.x) / 2, (start.y + end.y) / 2 - lift, end.x, end.y);
+      ctx.strokeStyle = 'rgba(' + rgb + ',0.95)';
+      ctx.shadowColor = 'rgba(' + rgb + ',0.85)';
+      ctx.shadowBlur = 8;
+      ctx.stroke();
+    }
+    var seen = {};
+    var i;
+    for (i = 0; i < CELLS; i += 1) {
+      var level = state.grid[i];
+      if (!level || level >= 15 || seen[i]) continue;
+      var partner = partnerOf(i);
+      if (partner < 0 || seen[partner]) continue;
+      seen[i] = true;
+      seen[partner] = true;
+      thread(center(i), center(partner), '228, 177, 90');
+    }
+    var dreams = dreamMap();
+    var dreamIndex;
+    for (dreamIndex in dreams) {
+      var step = dreams[dreamIndex] - 1;
+      if (step < 1) continue;
+      for (i = 0; i < CELLS; i += 1) {
+        if (state.grid[i] !== step) continue;
+        thread(center(i), center(Number(dreamIndex)), '142, 174, 134');
+        break;
+      }
+    }
+    ctx.shadowBlur = 0;
   }
 
   var stageTop = -1;
@@ -2929,6 +3010,7 @@
       roomChapter: $('room-chapter'),
       roomSection: document.querySelector('.room'),
       grid: $('merge-grid'),
+      links: $('board-links'),
       gridCount: $('grid-count'),
       board: document.querySelector('.merge-board'),
       spawn: $('btn-spawn'),
