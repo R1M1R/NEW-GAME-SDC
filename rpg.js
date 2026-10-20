@@ -581,105 +581,152 @@
         ctx.stroke();
       }
     }
-    var ink = 'hsl(' + foe.hue + ', 46%, 32%)';
-    ctx.fillStyle = ink;
+    var ink = 'hsl(' + foe.hue + ', 52%, 38%)';
+    var blush = 'hsl(' + foe.hue + ', 45%, 58%)';
+    ctx.lineWidth = Math.max(1.5, scale * 0.04);
     ctx.strokeStyle = '#1a120e';
-    ctx.lineWidth = 2;
+    // chibi body
+    ctx.fillStyle = ink;
+    ctx.beginPath();
+    ctx.ellipse(0, scale * 0.62, scale * 0.28, scale * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // legs
+    ctx.fillRect(-scale * 0.18, scale * 0.72, scale * 0.12, scale * 0.22);
+    ctx.fillRect(scale * 0.06, scale * 0.72, scale * 0.12, scale * 0.22);
+    ctx.fillStyle = '#2a1c14';
+    ctx.fillRect(-scale * 0.2, scale * 0.9, scale * 0.16, scale * 0.08);
+    ctx.fillRect(scale * 0.04, scale * 0.9, scale * 0.16, scale * 0.08);
+    // big head
+    ctx.fillStyle = blush;
+    ctx.beginPath();
+    ctx.arc(0, scale * 0.22, scale * 0.34, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#1a120e';
+    ctx.stroke();
+    // shape props / identity
     if (shape === 'ooze' || shape === 'siren') {
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
       ctx.beginPath();
-      ctx.ellipse(0, scale * 0.45, scale * 0.55, scale * 0.38, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, scale * 0.78, scale * 0.42, scale * 0.14, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.beginPath();
-      ctx.ellipse(-scale * 0.15, scale * 0.3, scale * 0.12, scale * 0.08, 0, 0, Math.PI * 2);
-      ctx.fill();
+      if (shape === 'siren') {
+        ctx.fillStyle = '#e07a9a';
+        ctx.beginPath();
+        ctx.moveTo(-scale * 0.2, scale * 0.02);
+        ctx.quadraticCurveTo(0, -scale * 0.35, scale * 0.2, scale * 0.02);
+        ctx.fill();
+      }
     } else if (shape === 'pipe' || shape === 'golem') {
-      ctx.fillRect(-scale * 0.45, scale * 0.05, scale * 0.9, scale * 0.7);
-      ctx.fillStyle = '#d7c3ae';
-      ctx.fillRect(-scale * 0.15, -scale * 0.15, scale * 0.3, scale * 0.35);
+      ctx.fillStyle = '#c4b09a';
+      ctx.fillRect(-scale * 0.12, -scale * 0.08, scale * 0.24, scale * 0.18);
+      ctx.fillStyle = ink;
+      ctx.fillRect(-scale * 0.38, scale * 0.5, scale * 0.16, scale * 0.28);
+      ctx.fillRect(scale * 0.22, scale * 0.5, scale * 0.16, scale * 0.28);
     } else if (shape === 'beast' || shape === 'hawk') {
+      ctx.fillStyle = ink;
       ctx.beginPath();
-      ctx.ellipse(0, scale * 0.45, scale * 0.62, scale * 0.28, 0, 0, Math.PI * 2);
+      ctx.moveTo(-scale * 0.22, scale * 0.05);
+      ctx.lineTo(-scale * 0.38, -scale * 0.12);
+      ctx.lineTo(-scale * 0.08, scale * 0.08);
       ctx.fill();
       ctx.beginPath();
-      ctx.ellipse(scale * 0.42, scale * 0.1, scale * 0.22, scale * 0.16, 0, 0, Math.PI * 2);
+      ctx.moveTo(scale * 0.22, scale * 0.05);
+      ctx.lineTo(scale * 0.38, -scale * 0.12);
+      ctx.lineTo(scale * 0.08, scale * 0.08);
       ctx.fill();
       if (shape === 'hawk') {
+        ctx.fillStyle = '#e4b15a';
         ctx.beginPath();
-        ctx.moveTo(-scale * 0.2, scale * 0.3);
-        ctx.lineTo(-scale * 0.9, scale * 0.05);
-        ctx.lineTo(-scale * 0.2, scale * 0.55);
+        ctx.moveTo(scale * 0.28, scale * 0.22);
+        ctx.lineTo(scale * 0.48, scale * 0.28);
+        ctx.lineTo(scale * 0.28, scale * 0.34);
         ctx.fill();
       }
     } else if (shape === 'moth' || shape === 'ghost') {
-      ctx.globalAlpha = shape === 'ghost' ? 0.75 : 1;
+      ctx.globalAlpha = shape === 'ghost' ? 0.8 : 1;
+      ctx.fillStyle = ink;
       ctx.beginPath();
-      ctx.ellipse(-scale * 0.28, scale * 0.35, scale * 0.28, scale * 0.42, -0.4, 0, Math.PI * 2);
-      ctx.ellipse(scale * 0.28, scale * 0.35, scale * 0.28, scale * 0.42, 0.4, 0, Math.PI * 2);
+      ctx.ellipse(-scale * 0.36, scale * 0.35, scale * 0.22, scale * 0.34, -0.35, 0, Math.PI * 2);
+      ctx.ellipse(scale * 0.36, scale * 0.35, scale * 0.22, scale * 0.34, 0.35, 0, Math.PI * 2);
       ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(0, scale * 0.4, scale * 0.16, scale * 0.28, 0, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.globalAlpha = 1;
     } else if (shape === 'mimic' || shape === 'keys') {
-      ctx.fillRect(-scale * 0.4, scale * 0.15, scale * 0.8, scale * 0.55);
+      ctx.fillStyle = '#8a5a2a';
+      ctx.fillRect(-scale * 0.42, scale * 0.48, scale * 0.84, scale * 0.32);
       ctx.fillStyle = '#f4efe4';
-      ctx.fillRect(-scale * 0.28, scale * 0.28, scale * 0.56, scale * 0.12);
+      ctx.fillRect(-scale * 0.3, scale * 0.55, scale * 0.6, scale * 0.08);
+      if (shape === 'keys') {
+        ctx.fillStyle = '#e4b15a';
+        ctx.fillRect(-scale * 0.28, scale * 0.42, scale * 0.08, scale * 0.1);
+        ctx.fillRect(-scale * 0.08, scale * 0.42, scale * 0.08, scale * 0.1);
+        ctx.fillRect(scale * 0.12, scale * 0.42, scale * 0.08, scale * 0.1);
+      }
     } else if (shape === 'drone') {
-      ctx.beginPath();
-      ctx.moveTo(0, -scale * 0.05);
-      ctx.lineTo(scale * 0.35, scale * 0.4);
-      ctx.lineTo(0, scale * 0.7);
-      ctx.lineTo(-scale * 0.35, scale * 0.4);
-      ctx.closePath();
-      ctx.fill();
       ctx.strokeStyle = '#e4b15a';
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(-scale * 0.55, scale * 0.15);
-      ctx.lineTo(scale * 0.55, scale * 0.15);
+      ctx.moveTo(-scale * 0.5, scale * 0.18);
+      ctx.lineTo(scale * 0.5, scale * 0.18);
       ctx.stroke();
-    } else if (shape === 'imp') {
+      ctx.fillStyle = '#e4b15a';
       ctx.beginPath();
-      ctx.arc(0, scale * 0.4, scale * 0.32, 0, Math.PI * 2);
+      ctx.arc(0, scale * 0.12, scale * 0.08, 0, Math.PI * 2);
       ctx.fill();
+    } else if (shape === 'imp') {
       ctx.fillStyle = '#e07a3a';
       ctx.beginPath();
-      ctx.moveTo(-scale * 0.1, scale * 0.15);
-      ctx.lineTo(0, -scale * 0.25);
-      ctx.lineTo(scale * 0.1, scale * 0.15);
+      ctx.moveTo(-scale * 0.12, scale * 0.02);
+      ctx.lineTo(-scale * 0.22, -scale * 0.28);
+      ctx.lineTo(0, scale * 0.02);
+      ctx.moveTo(scale * 0.12, scale * 0.02);
+      ctx.lineTo(scale * 0.22, -scale * 0.28);
+      ctx.lineTo(0, scale * 0.02);
       ctx.fill();
     } else if (shape === 'dust') {
-      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = 'rgba(232, 220, 196, 0.55)';
       ctx.beginPath();
-      ctx.ellipse(0, scale * 0.4, scale * 0.34, scale * 0.48, 0, 0, Math.PI * 2);
+      ctx.arc(-scale * 0.3, scale * 0.1, scale * 0.14, 0, Math.PI * 2);
+      ctx.arc(scale * 0.28, scale * 0.55, scale * 0.16, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = 'rgba(232, 220, 196, 0.45)';
+    } else if (shape === 'shade') {
+      ctx.fillStyle = 'rgba(40, 30, 55, 0.55)';
       ctx.beginPath();
-      ctx.arc(-scale * 0.28, scale * 0.2, scale * 0.16, 0, Math.PI * 2);
-      ctx.arc(scale * 0.3, scale * 0.55, scale * 0.18, 0, Math.PI * 2);
+      ctx.ellipse(0, scale * 0.55, scale * 0.4, scale * 0.35, 0, 0, Math.PI * 2);
       ctx.fill();
-    } else {
-      ctx.beginPath();
-      ctx.moveTo(-scale * 0.46, scale * 0.05);
-      ctx.lineTo(-scale * 0.66, scale * 0.4);
-      ctx.quadraticCurveTo(-scale * 0.2, scale * 1.05, 0, scale * 0.92);
-      ctx.quadraticCurveTo(scale * 0.2, scale * 1.05, scale * 0.66, scale * 0.4);
-      ctx.lineTo(scale * 0.46, scale * 0.05);
-      ctx.closePath();
-      ctx.fill();
-      if (foe.boss || shape === 'warden' || shape === 'brute') {
-        ctx.strokeStyle = '#e4b15a';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(0, -scale * 0.28, scale * 0.24, Math.PI, 0);
-        ctx.stroke();
-      }
     }
-    ctx.globalAlpha = 1;
+    // face
     ctx.fillStyle = '#1a120e';
     ctx.beginPath();
-    ctx.arc(-scale * 0.1, scale * 0.32, scale * 0.05, 0, Math.PI * 2);
-    ctx.arc(scale * 0.12, scale * 0.32, scale * 0.05, 0, Math.PI * 2);
+    ctx.arc(-scale * 0.12, scale * 0.18, scale * 0.055, 0, Math.PI * 2);
+    ctx.arc(scale * 0.12, scale * 0.18, scale * 0.055, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = '#1a120e';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, scale * 0.3, scale * 0.1, 0.15, Math.PI - 0.15);
+    ctx.stroke();
+    // boss crown / florist leaf / investor tie
+    if (foe.boss || shape === 'warden' || shape === 'brute') {
+      ctx.fillStyle = '#e4b15a';
+      ctx.beginPath();
+      ctx.moveTo(-scale * 0.28, scale * 0.02);
+      ctx.lineTo(-scale * 0.18, -scale * 0.22);
+      ctx.lineTo(-scale * 0.06, scale * 0.0);
+      ctx.lineTo(0, -scale * 0.28);
+      ctx.lineTo(scale * 0.06, scale * 0.0);
+      ctx.lineTo(scale * 0.18, -scale * 0.22);
+      ctx.lineTo(scale * 0.28, scale * 0.02);
+      ctx.closePath();
+      ctx.fill();
+    }
+    if (state.chapter === 2 && foe.boss) {
+      ctx.fillStyle = '#3d8a55';
+      ctx.beginPath();
+      ctx.ellipse(-scale * 0.3, scale * 0.05, scale * 0.12, scale * 0.08, -0.4, 0, Math.PI * 2);
+      ctx.ellipse(scale * 0.3, scale * 0.05, scale * 0.12, scale * 0.08, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 
@@ -697,84 +744,77 @@
     if (flash > 0) ctx.globalAlpha = 0.65 + Math.sin(flash * 40) * 0.25;
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
     ctx.beginPath();
-    ctx.ellipse(0, scale * 0.95, scale * 0.42, scale * 0.12, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, scale * 0.98, scale * 0.38, scale * 0.1, 0, 0, Math.PI * 2);
     ctx.fill();
-    var cape = kind === 'hero' ? cloakTint() : null;
+    var cape = cloakTint();
     if (cape) {
       ctx.fillStyle = cape;
       ctx.beginPath();
-      ctx.moveTo(-scale * 0.18, -scale * 0.05);
-      ctx.quadraticCurveTo(-scale * 0.72, scale * 0.35, -scale * 0.4, scale * 0.95);
-      ctx.lineTo(scale * 0.12, scale * 0.9);
-      ctx.quadraticCurveTo(-scale * 0.05, scale * 0.35, scale * 0.1, -scale * 0.02);
+      ctx.moveTo(-scale * 0.05, scale * 0.08);
+      ctx.quadraticCurveTo(-scale * 0.7, scale * 0.4, -scale * 0.35, scale * 0.95);
+      ctx.lineTo(scale * 0.15, scale * 0.88);
+      ctx.quadraticCurveTo(scale * 0.05, scale * 0.4, scale * 0.12, scale * 0.1);
       ctx.closePath();
       ctx.fill();
     }
-    var body = kind === 'hero' ? '#c4553a' : 'hsl(' + foe.hue + ', 42%, 38%)';
-    ctx.fillStyle = body;
-    if (kind === 'foe') {
-      ctx.beginPath();
-      ctx.moveTo(-scale * 0.42, -scale * 0.05);
-      ctx.lineTo(-scale * 0.62, scale * 0.35);
-      ctx.quadraticCurveTo(-scale * 0.2, scale * 1.05, 0, scale * 0.95);
-      ctx.quadraticCurveTo(scale * 0.2, scale * 1.05, scale * 0.62, scale * 0.35);
-      ctx.lineTo(scale * 0.42, -scale * 0.05);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#1a120e';
-      ctx.fillRect(-scale * 0.16, scale * 0.15, scale * 0.1, scale * 0.55);
-      ctx.fillRect(scale * 0.06, scale * 0.15, scale * 0.1, scale * 0.55);
-    } else {
-      ctx.beginPath();
-      ctx.moveTo(-scale * 0.26, -scale * 0.08);
-      ctx.quadraticCurveTo(-scale * 0.44, scale * 0.42, -scale * 0.2, scale * 0.72);
-      ctx.lineTo(-scale * 0.14, scale * 0.98);
-      ctx.lineTo(-scale * 0.02, scale * 0.98);
-      ctx.lineTo(scale * 0.04, scale * 0.72);
-      ctx.lineTo(scale * 0.14, scale * 0.98);
-      ctx.lineTo(scale * 0.26, scale * 0.98);
-      ctx.quadraticCurveTo(scale * 0.44, scale * 0.42, scale * 0.26, -scale * 0.08);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#8a3a28';
-      ctx.fillRect(-scale * 0.18, scale * 0.9, scale * 0.14, scale * 0.1);
-      ctx.fillRect(scale * 0.06, scale * 0.9, scale * 0.14, scale * 0.1);
-    }
-    ctx.fillStyle = kind === 'hero' ? '#f0c9a0' : '#c9b29a';
+    ctx.fillStyle = '#3a6a8a';
+    ctx.fillRect(-scale * 0.22, scale * 0.28, scale * 0.44, scale * 0.48);
+    ctx.fillStyle = '#c4553a';
+    ctx.fillRect(-scale * 0.18, scale * 0.18, scale * 0.36, scale * 0.2);
+    ctx.fillStyle = '#e4b15a';
+    ctx.fillRect(-scale * 0.14, scale * 0.2, scale * 0.06, scale * 0.28);
+    ctx.fillRect(scale * 0.08, scale * 0.2, scale * 0.06, scale * 0.28);
+    ctx.fillStyle = '#f0c9a0';
     ctx.beginPath();
-    ctx.arc(0, -scale * 0.42, scale * 0.28, 0, Math.PI * 2);
+    ctx.ellipse(-scale * 0.28, scale * 0.38, scale * 0.09, scale * 0.14, 0.3, 0, Math.PI * 2);
+    ctx.ellipse(scale * 0.3, scale * 0.4, scale * 0.09, scale * 0.14, -0.2, 0, Math.PI * 2);
     ctx.fill();
-    if (kind === 'hero') {
-      ctx.fillStyle = '#3a2418';
-      ctx.beginPath();
-      ctx.ellipse(0, -scale * 0.55, scale * 0.26, scale * 0.14, 0, Math.PI, 0);
-      ctx.fill();
-    }
+    ctx.fillStyle = '#2a4a62';
+    ctx.fillRect(-scale * 0.16, scale * 0.72, scale * 0.12, scale * 0.2);
+    ctx.fillRect(scale * 0.04, scale * 0.72, scale * 0.12, scale * 0.2);
+    ctx.fillStyle = '#5a3a28';
+    ctx.fillRect(-scale * 0.18, scale * 0.88, scale * 0.16, scale * 0.1);
+    ctx.fillRect(scale * 0.02, scale * 0.88, scale * 0.16, scale * 0.1);
+    ctx.fillStyle = '#f0c9a0';
+    ctx.beginPath();
+    ctx.arc(0, -scale * 0.02, scale * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#e4b15a';
+    ctx.beginPath();
+    ctx.ellipse(0, -scale * 0.18, scale * 0.32, scale * 0.16, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillRect(-scale * 0.34, -scale * 0.18, scale * 0.68, scale * 0.08);
     ctx.fillStyle = '#1a120e';
     ctx.beginPath();
-    ctx.arc(-scale * 0.1, -scale * 0.46, scale * 0.045, 0, Math.PI * 2);
-    ctx.arc(scale * 0.1, -scale * 0.46, scale * 0.045, 0, Math.PI * 2);
+    ctx.arc(-scale * 0.1, -scale * 0.02, scale * 0.045, 0, Math.PI * 2);
+    ctx.arc(scale * 0.1, -scale * 0.02, scale * 0.045, 0, Math.PI * 2);
     ctx.fill();
-    if (kind === 'hero' && state.gear && state.gear.charm) {
+    ctx.strokeStyle = '#1a120e';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, scale * 0.06, scale * 0.08, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+    if (state.gear && state.gear.charm) {
       var pulse = 0.55 + Math.sin(performance.now() / 180) * 0.25;
       ctx.fillStyle = 'rgba(228, 177, 90, ' + pulse + ')';
       ctx.beginPath();
-      ctx.arc(-scale * 0.02, scale * 0.12, scale * 0.08, 0, Math.PI * 2);
+      ctx.arc(0, scale * 0.32, scale * 0.07, 0, Math.PI * 2);
       ctx.fill();
     }
-    if (kind === 'hero' && state.gear && state.gear.weapon) {
-      var swingAng = heroLunge > 0 ? -0.55 + heroLunge * 0.9 : -0.15;
+    if (state.gear && state.gear.weapon) {
+      var swingAng = heroLunge > 0 ? -0.7 + heroLunge * 1.1 : -0.2;
       ctx.save();
-      ctx.translate(scale * 0.2, scale * 0.12);
+      ctx.translate(scale * 0.28, scale * 0.32);
       ctx.rotate(swingAng);
-      ctx.strokeStyle = '#e4b15a';
-      ctx.lineWidth = Math.max(2, scale * 0.07);
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(scale * 0.55, scale * 0.42);
-      ctx.stroke();
+      ctx.fillStyle = '#6a4a28';
+      ctx.fillRect(-scale * 0.04, 0, scale * 0.08, scale * 0.42);
       ctx.fillStyle = '#f4d78a';
-      ctx.fillRect(scale * 0.4, scale * 0.32, scale * 0.3, scale * 0.14);
+      ctx.beginPath();
+      ctx.moveTo(-scale * 0.12, scale * 0.4);
+      ctx.lineTo(scale * 0.12, scale * 0.4);
+      ctx.lineTo(0, scale * 0.62);
+      ctx.closePath();
+      ctx.fill();
       ctx.restore();
     }
     ctx.restore();
@@ -799,7 +839,7 @@
     var heroX = w * 0.30 + heroLunge * 22;
     var foeX = w * 0.72 - foeLunge * 18 - (wind > 0.72 ? w * 0.03 : 0);
     var foot = h * 0.78;
-    var scale = Math.max(28, h * 0.22);
+    var scale = Math.max(34, h * 0.26);
     drawActor(ctx, heroX, foot - scale, scale, 'hero', 0);
     if (foe.hp <= 0) {
       ctx.fillStyle = 'rgba(90, 40, 40, 0.75)';
