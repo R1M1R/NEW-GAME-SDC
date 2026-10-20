@@ -1947,6 +1947,60 @@ body.is-paused .app * {
 
 .event-banner[hidden] { display: none; }
 
+.reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(8, 6, 4, 0.55);
+}
+
+.reveal[hidden] { display: none; }
+
+.reveal-card {
+  width: min(92vw, 340px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 16px 18px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #3a2e24, #1c1612);
+  border: 1px solid rgba(228, 177, 90, 0.7);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  color: #f6efe4;
+  text-align: center;
+}
+
+.reveal-card canvas {
+  width: 148px;
+  height: 148px;
+}
+
+.reveal-kicker {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #e4b15a;
+}
+
+.reveal-card h2 {
+  margin: 0;
+  font-family: "Iowan Old Style", Palatino, Georgia, serif;
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.reveal-card p#reveal-desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.35;
+  color: rgba(246, 239, 228, 0.82);
+}
+
 .event-banner strong { font-size: 14px; }
 .event-banner p { font-size: 12px; color: var(--cream-dim); line-height: 1.35; }
 .event-banner em { font-style: normal; color: var(--gold-2); font-size: 12px; font-weight: 800; }

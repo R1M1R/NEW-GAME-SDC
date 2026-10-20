@@ -775,6 +775,26 @@
     };
   }
 
+  var revealTimer = 0;
+
+  function hideReveal() {
+    if (nodes.reveal) nodes.reveal.hidden = true;
+    clearTimeout(revealTimer);
+  }
+
+  function showReveal(level) {
+    if (!nodes.reveal || !nodes.revealArt) return;
+    var canvas = nodes.revealArt;
+    var ctx = canvas.getContext('2d');
+    if (art.paintItem) art.paintItem(ctx, level, canvas.width, animTime);
+    nodes.revealKicker.textContent = i18n.t('design.revealKicker');
+    nodes.revealName.textContent = i18n.t('items.' + level + '.name');
+    nodes.revealDesc.textContent = i18n.t('items.' + level + '.desc');
+    nodes.reveal.hidden = false;
+    clearTimeout(revealTimer);
+    revealTimer = setTimeout(hideReveal, 3400);
+  }
+
   function noteDiscover(level, index) {
     if (level < 1 || level > 15 || state.discovered[level]) return;
     state.discovered[level] = true;
@@ -784,6 +804,7 @@
     if (state.quest.type === 'discover' && level >= state.quest.target) state.quest.progress = 1;
     settleContract();
     audio.playNewLevelUnlock();
+    showReveal(level);
     toast(i18n.t('play.discovered', { name: i18n.t('items.' + level + '.name') }));
     if (!juice) return;
     var point = cellPoint(index);
@@ -2862,6 +2883,11 @@
       eventTitle: $('event-title'),
       eventCopy: $('event-copy'),
       eventTimer: $('event-timer'),
+      reveal: $('reveal'),
+      revealArt: $('reveal-art'),
+      revealKicker: $('reveal-kicker'),
+      revealName: $('reveal-name'),
+      revealDesc: $('reveal-desc'),
       eventActions: $('event-actions'),
       dealSell: $('deal-sell'),
       dealKeep: $('deal-keep'),
@@ -2921,7 +2947,7 @@
       touched = true;
       claimQuest();
     });
-    if (nodes.dealSell) nodes.dealSell.addEventListener('click', function () { touched = true; sellDeal(); });
+    if (nodes.reveal) nodes.reveal.addEventListener('click', hideReveal);
     if (nodes.dealKeep) nodes.dealKeep.addEventListener('click', function () { touched = true; keepDeal(); });
     nodes.roomSection.addEventListener('click', function (event) {
       if (event.target.closest && event.target.closest('.zone-pin, .fuse-box')) return;
