@@ -1967,18 +1967,45 @@
     }
   }
 
-  function drawGuest(ctx, R, time) {
+  function drawGhosts(ctx, R, pieces, time) {
+    if (!pieces || !pieces.length) return;
+    var spots = [[0.36, 0.58], [0.58, 0.52]];
+    for (var i = 0; i < pieces.length && i < spots.length; i += 1) {
+      var p = floorPt(R, spots[i][0], spots[i][1]);
+      var size = Math.max(14, R.bh * 0.28);
+      var sprite = renderSprite(pieces[i], Math.round(size), time || 0);
+      ctx.save();
+      ctx.globalAlpha = 0.34 + Math.sin((time || 0) * 2.2 + i) * 0.08;
+      ctx.drawImage(sprite, p[0] - size * 0.5, p[1] - size * 0.9, size, size);
+      ctx.restore();
+    }
+  }
+
+  function guestTint(client) {
+    var colors = {
+      kirill: '#3d4d66',
+      sofia: '#6a3d4a',
+      viktor: '#5a4630',
+      alina: '#4a3d66',
+      mark: '#3d5244',
+      lera: '#6a4a3d'
+    };
+    return colors[client] || '#3a2a22';
+  }
+
+  function drawGuest(ctx, R, time, mood, client) {
     var p = floorPt(R, 0.8, 0.48);
     var h = Math.max(18, R.bh * 0.62);
     var x = p[0];
     var foot = p[1];
-    var wave = Math.sin(time * 6) * h * 0.06;
+    var joy = mood === 'joy';
+    var wave = Math.sin(time * (joy ? 6 : 1.3)) * h * (joy ? 0.08 : 0.015);
     ctx.save();
     ctx.fillStyle = 'rgba(20, 14, 10, 0.3)';
     ellipse(ctx, x, foot, h * 0.2, h * 0.05);
     ctx.fill();
     var body = foot - h * 0.72;
-    ctx.fillStyle = '#3a2a22';
+    ctx.fillStyle = guestTint(client);
     roundRect(ctx, x - h * 0.16, body + h * 0.22, h * 0.32, h * 0.42, h * 0.1);
     ctx.fill();
     ctx.fillStyle = '#f3d7b0';
@@ -2073,7 +2100,8 @@
     }
     if (tier >= 6) paintSparkles(ctx, R, t);
     if (model && model.pieces) stageBoard(ctx, R, model.pieces, t);
-    if (model && model.guest) drawGuest(ctx, R, t);
+    if (model && model.ghosts) drawGhosts(ctx, R, model.ghosts, t);
+    if (model && model.guest) drawGuest(ctx, R, t, model.mood, model.client);
     ctx.fillStyle = radial(ctx, w / 2, h * 0.62, Math.min(w, h) * 0.55, Math.max(w, h) * 0.92, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,' + (tier >= 4 ? 0.16 : 0.1) + ')']]);
     ctx.fillRect(0, 0, w, h);
   }

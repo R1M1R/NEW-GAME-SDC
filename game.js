@@ -817,6 +817,7 @@
       state.grid[source] = 0;
       noteMerge(target, from + 1);
       noteDiscover(from + 1, target);
+      noticeClient(from + 1);
       popCell(target);
     } else if (from === onto) {
       toast(i18n.t('play.maxItem'));
@@ -1048,15 +1049,69 @@
     return labelOr('design.visit' + id, '');
   }
 
+  function ghostNeeds() {
+    var order = state.orders && state.orders[0];
+    if (!order || !order.needs) return [];
+    var have = {};
+    var grid = state.grid || [];
+    for (var i = 0; i < grid.length; i += 1) {
+      var level = grid[i] || 0;
+      if (level) have[level] = (have[level] || 0) + 1;
+    }
+    var missing = [];
+    var used = {};
+    for (var n = 0; n < order.needs.length; n += 1) {
+      var need = order.needs[n];
+      if (have[need]) {
+        have[need] -= 1;
+        continue;
+      }
+      if (used[need]) continue;
+      used[need] = true;
+      missing.push(need);
+    }
+    return missing.slice(0, 2);
+  }
+
+  function waitingClient() {
+    var order = state.orders && state.orders[0];
+    return order && order.client ? order.client : '';
+  }
+
+  function countLevel(level) {
+    var count = 0;
+    var grid = state.grid || [];
+    for (var i = 0; i < grid.length; i += 1) if (grid[i] === level) count += 1;
+    return count;
+  }
+
+  function noticeClient(level) {
+    if (!state.orders || !level) return;
+    for (var i = 0; i < state.orders.length; i += 1) {
+      var needs = state.orders[i].needs || [];
+      var wants = 0;
+      for (var n = 0; n < needs.length; n += 1) if (needs[n] === level) wants += 1;
+      if (!wants || countLevel(level) !== wants) continue;
+      toast(i18n.t('design.noticed', {
+        name: i18n.t('clients.' + state.orders[i].client + '.name'),
+        item: itemShort(level)
+      }));
+      return;
+    }
+  }
   function drawRoom(time) {
     var box = fitCanvas(nodes.room);
     if (!box) return;
+    var client = visitActive() ? visitClient : waitingClient();
     art.paintRoom(nodes.room.getContext('2d'), box.w, box.h, {
       maxLevel: discoveredMax(),
       rentLevel: state.upgrades.rent,
       zones: state.zones,
-      guest: visitActive(),
-      pieces: stagedPieces()
+      guest: !!client,
+      mood: visitActive() ? 'joy' : 'wait',
+      client: client,
+      pieces: stagedPieces(),
+      ghosts: ghostNeeds()
     }, time);
   }
 

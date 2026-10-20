@@ -127,6 +127,7 @@
         visitMark: 'Марк обходит комнату и кивает.',
         visitLera: 'Лера ставит букет на столик.',
         staged: 'В комнате теперь {item}.',
+        noticed: '{name} увидел «{item}».',
         purr: 'Мррр'
       },
       nav: {
@@ -689,6 +690,7 @@
         visitMark: 'Mark walks the room and nods.',
         visitLera: 'Lera sets a bouquet on the table.',
         staged: 'The room now has a {item}.',
+        noticed: '{name} spotted the {item}.',
         purr: 'Purr'
       },
       nav: {
