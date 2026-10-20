@@ -47,6 +47,7 @@
   var lastDraw = -1;
   var combo = 0;
   var comboAt = 0;
+  var chainDepth = 0;
   var drag = null;
   var ghost = null;
   var offlineOpen = false;
@@ -237,9 +238,18 @@
       for (var n = 0; n < counts[keys[i]]; n += 1) bag.push(Number(keys[i]));
     }
     var spawn = Math.min(14, 1 + ((source.upgrades && source.upgrades.base) || 0));
+    var climb = 0;
+    var climbKey;
+    for (climbKey in counts) {
+      var climbLevel = Number(climbKey);
+      if (climbLevel < 14 && counts[climbKey] >= 2 && climbLevel > climb) climb = climbLevel;
+    }
     var a;
     var b;
-    if (bag.length >= 2) {
+    if (climb) {
+      a = climb + 1;
+      b = climb + 1;
+    } else if (bag.length >= 2) {
       bag.sort(function (x, y) { return y - x; });
       var hero = Math.floor(Math.random() * Math.max(1, Math.ceil(bag.length / 3)));
       a = bag.splice(hero, 1)[0];
@@ -1135,10 +1145,10 @@
           pool[need] -= 1;
           continue;
         }
-        if (need <= level + 1) plan.push(need);
+        if (need <= 1 || need <= level) plan.push(need);
         else {
-          plan.push(Math.max(1, need - 1));
-          if (plan.length < 3) plan.push(Math.max(1, need - 1));
+          plan.push(need - 1);
+          if (plan.length < 3) plan.push(need - 1);
         }
         if (plan.length >= 3) return plan.slice(0, 3);
       }
