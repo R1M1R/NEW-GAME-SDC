@@ -1518,7 +1518,7 @@
     else if (leadReady && !leadSeen) roomFlashUntil = performance.now() + 800;
     leadSeen = leadReady;
     var happy = visitActive() || rehearseActive() || performance.now() < sceneJoyUntil || leadReady;
-    var voice = visitLine() || nextMove(views);
+    var voice = nextMove(views);
     art.paintRoom(nodes.room.getContext('2d'), box.w, box.h, {
       maxLevel: discoveredMax(),
       rentLevel: state.upgrades.rent,
@@ -2190,7 +2190,7 @@
     var seconds = String(Math.ceil(state.feverLeftMs / 1000));
     var left = i18n.t('design.feverLeft', { sec: seconds });
     if (!left || left === 'design.feverLeft') left = seconds + (i18n.lang === 'en' ? 's' : ' с');
-    var slate = visitLine() || nextMove();
+    var slate = nextMove();
     nodes.inspireLabel.textContent = fever ? feverName + ' ' + left : slate;
   }
 
