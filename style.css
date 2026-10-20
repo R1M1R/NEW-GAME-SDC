@@ -1830,6 +1830,17 @@ body.is-paused .app * {
   color: var(--cream-dim);
 }
 
+.order-instead {
+  display: block;
+  font-style: normal;
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--cream-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .order-need.is-have .order-need-mark { color: #b9e3a8; }
 
 .order-submit:disabled {
@@ -2183,6 +2194,8 @@ body.is-paused .app * {
   pointer-events: none;
 }
 
+.qa-root[hidden] { display: none; }
+
 .qa-toggle,
 .qa-panel,
 .qa-panel button {
@@ -2199,6 +2212,8 @@ body.is-paused .app * {
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
 }
 
+.qa-panel[hidden] { display: none; }
+
 .qa-panel {
   width: min(320px, calc(100vw - 24px));
   display: flex;
@@ -2211,8 +2226,6 @@ body.is-paused .app * {
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
   color: #f6efe4;
 }
-
-.qa-panel[hidden] { display: none; }
 
 .qa-panel h2 {
   font-family: "Iowan Old Style", Palatino, Georgia, serif;
@@ -2519,6 +2532,7 @@ body.is-paused .app * {
   .order-need canvas { display: none; }
   .order-need-name { display: none; }
   .order-need-mark { display: none; }
+  .order-instead { display: none; }
   .order-need-short {
     display: block;
     flex: 0 0 auto;

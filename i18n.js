@@ -173,7 +173,8 @@
         count: '{filled} / {total}',
         cell: 'Ячейка {n}',
         rank: 'Ур. {n}',
-        finer: 'Ур. {n} · выше'
+        finer: 'Ур. {n} · выше',
+        instead: 'вместо «{name}»'
       },
       album: {
         title: 'Альбом интерьера',
@@ -765,7 +766,8 @@
         count: '{filled} / {total}',
         cell: 'Cell {n}',
         rank: 'Lv {n}',
-        finer: 'Lv {n} · finer'
+        finer: 'Lv {n} · finer',
+        instead: 'instead of the {name}'
       },
       album: {
         title: 'Interior album',
