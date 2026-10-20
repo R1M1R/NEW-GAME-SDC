@@ -478,9 +478,16 @@ body.is-paused .app * {
 
 .cell.has-item::before { content: none; }
 
+.cell.has-item {
+  overflow: visible;
+  z-index: 1;
+}
+
 .cell canvas {
-  width: 100%;
-  height: 100%;
+  width: 108%;
+  height: 108%;
+  margin-left: -4%;
+  margin-top: -6%;
   display: block;
   pointer-events: none;
 }
